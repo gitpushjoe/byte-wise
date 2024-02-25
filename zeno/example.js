@@ -21,16 +21,16 @@ for (let i = 0; i < people.length; ++i) { // SECTION 2
 	const person = people[i];
 	const [name, age] = person;
 
-	if (age >= 18) {
-		// SECTION 4
+	if (age >= 18) { // SECTION 4
+		// SECTION 5
 		adults.push(name);
 	} else {
-		// SECTION 5
+		// SECTION 6
 		children.push(name);
 	}
 }
 
-// SECTION 6
+// SECTION 7
 adults.sort();
 children.sort();
 

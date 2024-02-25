@@ -11,18 +11,42 @@ class Zap { // short for Zeno Snapshots
 class Zeno {
 
 	static get SCOPE_TYPE() {
-		return "%SCOPE_TYPE%";
+		return "[[SCOPE_TYPE]]";
 	}
 
-	static get FOR() {
-		return "FOR";
+	static get SOURCE_SECTION() {
+		return "[[SOURCE_SECTION]]";
+	}
+
+	static get SCOPE_NAME() {
+		return "[[SCOPE_NAME]]";
+	}
+
+	static get BLOCK() {
+		return "BLOCK";
 	}
 
 	static get MAIN() {
 		return "MAIN";
 	}
 
-	stacks = [new Map([[Zeno.SCOPE_TYPE, Zeno.MAIN]])];
+	static get FOR() {
+		return "FOR";
+	}
+
+	static get IF() {
+		return "IF";
+	}
+
+	static get ELSE() {
+		return "ELSE";
+	}
+
+	static get ELSEIF() {
+		return "ELSEIF";
+	}
+
+	stack = [];
 	proxy = undefined;
 	zaps = [];
 
@@ -43,42 +67,44 @@ class Zeno {
 			},
 		};
 		this.proxy = new Proxy(func, handler);
+		this.pushScope(Zeno.MAIN, "main", 0);
 	}
 
 	currentScope() {
-		return this.stacks[this.stacks.length - 1];
+		return this.stack[this.stack.length - 1];
 	}
 
 	find(name) {
-		let scope = this.currentScope();
-		if (scope.has(name)) {
-			return scope.get(name);
-		} else {
-			let scopeIndex = this.stacks.length - 1;
-			while (scope.get(Zeno.SCOPE_TYPE) === Zeno.FOR) {
-				scopeIndex--;
-				scope = this.stacks[scopeIndex];
-				if (scope.has(name)) {
-					return scope.get(name);
-				}
+		for (const scope of this.accessibleScopes()) {
+			if (scope.has(name)) {
+				return scope.get(name);
 			}
-			throw new Error(`Variable ${name} not found`);
 		}
+		throw new Error(`Variable "${name}" not found`);
+	}
+
+	scopeIdxIs(idx, type) {
+		return this.stack[idx].get(Zeno.SCOPE_TYPE) === type;
+	}
+
+	*accessibleScopes() {
+		let scopeIdx = this.stack.length - 1;
+		do {
+			yield this.stack[scopeIdx];
+		} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
+	}
+
+	pushScope(type, name, section) {
+		this.stack.push(new Map([[Zeno.SCOPE_TYPE, type], [Zeno.SCOPE_NAME, name], [Zeno.SOURCE_SECTION, section]]));
 	}
 
 	set(name, value) {
 		if (value === undefined) {
 			throw new Error("Cannot set variable to undefined");
 		}
-		if (this.currentScope().has(name)) {
-			this.currentScope().set(name, value);
-			return;
-		}
-		let scopeIndex = this.stacks.length - 1;
-		while (this.stacks[scopeIndex].get(Zeno.SCOPE_TYPE) === Zeno.FOR) {
-			scopeIndex--;
-			if (this.stacks[scopeIndex].has(name)) {
-				this.stacks[scopeIndex].set(name, value);
+		for (const scope of this.accessibleScopes()) {
+			if (scope.has(name)) {
+				scope.set(name, value);
 				return;
 			}
 		}
@@ -86,26 +112,61 @@ class Zeno {
 	}
 
 	unregister(name) {
-		const scope = this.currentScope();
-		scope.delete(name);
+		this.currentScope().delete(name);
 	}
 
 	zap(section) {
-		const snapshotData = this.stacks.map(scope => clone(scope));
+		const snapshotData = this.stack.map(scope => clone(scope));
 		this.zaps.push(new Zap(section, snapshotData));
 	}
 
-	for(section, name, init, condition, update, body) {
-		this.set(name, init);
-		while (condition(this.find(name))) {
-			const scope = new Map([[Zeno.SCOPE_TYPE, Zeno.FOR]]);
-			this.stacks.push(scope);
-			this.zap(section);
-			body(this.find(name));
-			this.stacks.pop();
-			this.set(name, update(this.find(name)));
+	for(name, init, condition, update, section, body) {
+		if (!condition(init)) {
+			return;
 		}
-		this.unregister(name);
+		let value = init;
+		while (1) {
+			this.pushScope(Zeno.BLOCK, Zeno.FOR, section);
+			this.set(name, value);
+			this.zap(section);
+			body(value);
+			value = update(this.find(name));
+			this.set(name, value);
+			this.stack.pop();
+			if (!condition(value)) {
+				return;
+			}
+		}
+	}
+
+	if(condition, section, body, elseBody) {
+		const success = condition();
+		if (success) {
+			this.pushScope(Zeno.BLOCK, Zeno.IF, section);
+			body();
+			this.stack.pop();
+		} else if (elseBody !== undefined) {
+			this.pushScope(Zeno.BLOCK, Zeno.ELSE, section);
+			elseBody();
+			this.stack.pop();
+		}
+	}
+
+	print() {
+		this.zaps.forEach((zap, idx) => {
+			const data = zap.snapshotData;
+			let text = "";
+			console.log(`Zap #${idx + 1} (Section ${zap.section})`);
+			for (let i = 0; i < data.length; i++) {
+				text += `Scope level ${i}: `;
+				for (const [key, value] of data[i]) {
+					// text += `(\x1b[33m"${key}"\x1b[0m: \x1b[36m${JSON.stringify(value)}\x1b[0m) `;
+					text += `\n\t\u001b[33m"${key}"\u001b[0m: \u001b[36m${JSON.stringify(value)}\u001b[0m`;
+				}
+				text += "\n";
+			}
+			console.log(text);
+		});
 	}
 };
 
@@ -113,7 +174,7 @@ const zeno = new Zeno();
 const $ = zeno.proxy;
 const zap = zeno.zap.bind(zeno);
 
-$("people", [
+$.people = [
 	["John", 15],
 	["Jane", 13],
 	["Mike", 20],
@@ -124,51 +185,39 @@ $("people", [
 	["Alice", 17],
 	["Eve", 31],
 	["Adam", 19]
-]);
+];
 
 zap(0);
 
-$("adults", []);
-$("children", []);
+$.adults = [];
+$.children = [];
 
 zap(1);
 
-// for (let i = 0; i < 10; i++) {
-zeno.for(2, "i", 0, (i) => i < $.people.length, (i) => ++i, (i) => {
+zeno.for("i", 0, (i) => i < $.people.length, (i) => ++i, 2, (i) => {
 	
-	$("person", $.people[i]);
+	$.person = $.people[i];
+	[ $.name, $.age ] = $.person;
 
-	$("name", $.person[0]);
-	$("age", $.person[1]);
 	zap(3);
 
-	if ($.age >= 18) {
-		$("adults", $.adults.concat($.person[0]));
-		zap(4);
-	} else {
-		$("children", $.children.concat($.person[0]));
+	zeno.if(() => $.age >= 18, 4, () => {
+		$.adults.push($.name);
 		zap(5);
-	}
+
+	}, () => {
+		$.children.push($.name);
+		zap(6);
+	});
 
 });
 
-$("adults", $.adults.sort());
-$("children", $.children.sort());
-zap(6);
+$.adults.sort();
+$.children.sort();
 
-zeno.zaps.forEach((zap, idx) => {
-	const data = zap.snapshotData;
-	let text = "";
-	console.log(`Zap #${idx + 1} (Section ${zap.section})`);
-	for (let i = 0; i < data.length; i++) {
-		text += `Scope idx ${i}: `;
-		for (const [key, value] of data[i]) {
-			text += `("${key}": ${JSON.stringify(value)}) `;
-		}
-		text += "\n";
-	}
-	console.log(text);
-});
+zap(7);
 
-// console.log(zeno.zaps.map(zap => zap.snapshotData));
+zeno.print();
+
+console.log({ adults: $.adults, children: $.children });
 
