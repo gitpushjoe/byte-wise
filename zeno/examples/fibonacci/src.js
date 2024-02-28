@@ -1,19 +1,14 @@
-// SECTION 0
-const num = 10;
+const num = 6;
 
-// SECTION 1
 function fib(n) {
-
-	// SECTION 2
 	if (n <= 1) {
-		// SECTION 3
 		return n;
 	}
-	// SECTION 4
-	return fib(n - 1) + fib(n - 2);
+	const num1 = fib(n - 1);
+	const num2 = fib(n - 2);
+	return num1 + num2;
 }
 
-// SECTION 5
 const result = fib(num);
-
 console.log(result);
+
