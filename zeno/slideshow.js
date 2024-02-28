@@ -3,6 +3,10 @@ const Zeno = require("./zeno.js");
 const split = require("./utils.js").splitTextBySections;
 const interlace = require("./utils.js").interlace_strings;
 
+/**
+ * @param {Zeno} zeno
+ * @param {string} sections
+ */
 async function slideshow(zeno, sections) {
 
 	const stdin = process.stdin;

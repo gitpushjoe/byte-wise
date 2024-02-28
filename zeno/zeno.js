@@ -1,12 +1,32 @@
 const rfdc = require("rfdc");
 const clone = rfdc();
 
+/** @typedef {Map<string, any>} Scope */
+/** @typedef {Scope[]} Stack */
+
 class Zap { // short for Zeno Snapshots
+
+	/**
+	 * @param {number} section
+	 * @param {Stack} snapshotData
+	 */
 	constructor(section, snapshotData) {
 		this.section = section;
 		this.snapshotData = snapshotData;
 	}
 }
+
+/**
+	 * @typedef {{
+	 *   (section: number)
+	 *   (name: string, section: number, argNames: string[], body: Function): Function;
+	 *   if: (condition: Function, section: number, body: Function, elseSection: number, elseBody: Function) => boolean;
+	 *   for: (name: string, init: Function, condition: Function, update: Function, section: number, body: Function) => boolean;
+	 *   print: () => void;
+	 *   printConcise: () => void;
+	 *   log: (data: any) => void;
+	 * }} ZenoProxy
+*/
 
 class Zeno {
 
@@ -62,9 +82,15 @@ class Zeno {
 		return "ELSEIF";
 	}
 
+
+	/** @type {Scope[]} */
 	stack = [];
-	proxy = undefined;
+
+	/** @type {Zap[]} */
 	zaps = [];
+
+	/** @type { ZenoProxy } */
+	proxy = undefined;
 
 	constructor() {
 		const func = (function () { return; }).bind(this);
@@ -92,10 +118,18 @@ class Zeno {
 		this.pushScope(Zeno.MAIN, "main()", null);
 	}
 
+	/** Returns the current scope
+	* @returns {Scope}
+	*/
 	currentScope() {
 		return this.stack[this.stack.length - 1];
 	}
 
+	/** Searches for a variable in the current scope and all accessible scopes
+	* @param {string} - The name of the variable to search for
+	* @returns {any}
+	* @throws {Error}
+	*/
 	find(name) {
 		for (const scope of this.accessibleScopes()) {
 			if (scope.has(name)) {
@@ -105,10 +139,18 @@ class Zeno {
 		throw new Error(`Variable "${name}" not found`);
 	}
 
+	/** Checks if the scope at the given index is of the given type
+	* @param {number} - The index of the scope to check
+	* @param {string} - The type to check for
+	* @returns {boolean}
+	*/
 	scopeIdxIs(idx, type) {
 		return this.stack[idx].get(Zeno.SCOPE_TYPE) === type;
 	}
 
+	/** Returns an iterator over all accessible scopes
+	* @returns {IterableIterator<Scope>}
+	*/
 	*accessibleScopes() {
 		let scopeIdx = this.stack.length - 1;
 		do {
@@ -116,6 +158,11 @@ class Zeno {
 		} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
 	}
 
+	/** Pushes a new scope onto the stack
+	* @param {string} type - The type of the scope
+	* @param {string} name - The name of the scope
+	* @param {number|number[]} sourceSections - The section(s) the scope belongs to
+	*/
 	pushScope(type, name, sourceSections) {
 		if (!Array.isArray(sourceSections)) {
 			sourceSections = [sourceSections];
@@ -123,6 +170,11 @@ class Zeno {
 		this.stack.push(new Map([[Zeno.SCOPE_TYPE, type], [Zeno.SCOPE_NAME, name], [Zeno.SOURCE_SECTIONS, sourceSections]]));
 	}
 
+	/** Sets a variable in the current scope or any accessible scope
+	* @param {string} name - The name of the variable to set
+	* @param {any} value - The value to set the variable to
+	* @throws {Error}
+	*/
 	set(name, value) {
 		if (value === undefined) {
 			throw new Error("Cannot set variable to undefined");
@@ -136,15 +188,31 @@ class Zeno {
 		this.currentScope().set(name, value);
 	}
 
+	/** Removes a variable from the current scope
+	* @param {string} name - The name of the variable to remove
+	*/
 	unregister(name) {
 		this.currentScope().delete(name);
 	}
 
+	/** Logs a snapshot of the current state of the stack	
+	* @param {number} section - The current section
+	*/
 	zap(section) {
 		const snapshotData = this.stack.map(scope => clone(scope));
 		this.zaps.push(new Zap(section, snapshotData));
 	}
 
+	/** Simulates a for loop
+	* @param {string} name - The name of the loop variable
+	* @param {Function} init - The initial value of the loop variable
+	* @param {Function} condition - The condition to check before each iteration
+	* @param {Function} update - The function to call after each iteration
+	* @param {number} section - The section the for loop belongs to
+	* @param {Function} body - The loop body
+	*
+	* @returns {boolean} - Places the return value of the body on the virtual stack if there is one and returns true, otherwise returns false
+	*/
 	for(name, init, condition, update, section, body) {
 		if (!condition(init)) {
 			return;
@@ -163,11 +231,20 @@ class Zeno {
 			this.set(name, value);
 			this.stack.pop();
 			if (!condition(value)) {
-				return;
+				return 0;
 			}
 		}
 	}
 
+	/** Simulates an if-else statement
+	* @param {Function} condition - The condition to check
+	* @param {number} section - The section the if statement belongs to
+	* @param {Function} body - The if body
+	* @param {number|undefined} elseSection - The section the else statement belongs to
+	* @param {Function|undefined} elseBody - The else body
+	*
+	* @returns {boolean} - Places the return value of the body or elseBody on the virtual stack if there is one and returns true, otherwise returns false
+	*/
 	if(condition, section, body, elseSection, elseBody) {
 		const success = condition();
 		if (success) {
@@ -190,6 +267,14 @@ class Zeno {
 		return 0;
 	}
 
+	/** Simulates a function call
+	* @param {string} name - The name of the function
+	* @param {number} section - The section the function call belongs to
+	* @param {any[]} args - The arguments to pass to the function
+	* @param {Function} body - The function body
+	*
+	* @returns {Function} - A function that simulates the function call
+	*/
 	function(name, section, argsNames, body) { 
 		return (function (sourceSection, ...args) {
 			const signature = `${name}(${args.join(", ")})`;
@@ -225,10 +310,15 @@ class Zeno {
 			}).bind(this);
 	}
 
+	/** Logs a message to the virtual stdout
+	* @param {any} data - The data to log
+	*/
 	log(data) {
-		this.stack[0].set(Zeno.STDOUT, (this.stack[0].get(Zeno.STDOUT) ?? "") + JSON.stringify(data) + "\n");
+		this.stack[0].set(Zeno.STDOUT, (this.stack[0].get(Zeno.STDOUT) ?? "") + JSON.stringify(data));
 	}
 
+	/** Logs the current state of the stack
+	*/
 	print() {
 		this.zaps.forEach((zap, idx) => {
 			const data = zap.snapshotData;
@@ -245,6 +335,8 @@ class Zeno {
 		});
 	}
 
+	/** Logs the current state of the stack in a more concise format
+	*/
 	printConcise() {
 		this.zaps.forEach((zap, idx) => {
 			const data = zap.snapshotData;
