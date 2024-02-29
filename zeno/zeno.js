@@ -22,6 +22,7 @@ class Zap { // short for Zeno Snapshots
 	 *   (name: string, section: number, argNames: string[], body: Function): Function;
 	 *   if: (condition: Function, section: number, body: Function, elseSection: number, elseBody: Function) => boolean;
 	 *   for: (name: string, init: Function, condition: Function, update: Function, section: number, body: Function) => boolean;
+	 *   rangedFor: (name: string, range: any[], section: number, body: Function) => boolean;
 	 *   print: () => void;
 	 *   printConcise: () => void;
 	 *   log: (data: any) => void;
@@ -70,6 +71,10 @@ class Zeno {
 		return "FOR";
 	}
 
+	static get RANGED_FOR() {
+		return "RANGED_FOR";
+	}
+
 	static get IF() {
 		return "IF";
 	}
@@ -82,6 +87,24 @@ class Zeno {
 		return "ELSEIF";
 	}
 
+	static stringify(value) {
+		if (value === undefined) {
+			return "undefined";
+		}
+		if (value instanceof Set) {
+			return '{' + JSON.stringify([...value]).slice(1, -1) + '}';
+		}
+		if (typeof value === "string") {
+			return `"${value}"`;
+		}
+		if (typeof value === "number") {
+			return value;
+		}
+		if (typeof value === "object") {
+			return JSON.stringify(value);
+		}
+		return value;
+	}
 
 	/** @type {Scope[]} */
 	stack = [];
@@ -103,7 +126,7 @@ class Zeno {
 				return this.function(...args);
 			},
 			get: (_, name) => {
-				if (["if", "for", "print", "printConcise", "log"].includes(name)) {
+				if (["if", "for", "rangedFor", "print", "printConcise", "log"].includes(name)) {
 					return this[name].bind(this);
 				}
 				return this.find(name);
@@ -133,7 +156,6 @@ class Zeno {
 	*/
 	findReference(name, scopeIdx = this.stack.length - 1) {
 		scopeIdx ??= this.stack.length - 1;
-		// console.log("findReference", name, scopeIdx);
 		while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
 		return this.find(name, scopeIdx);
 	}
@@ -145,7 +167,6 @@ class Zeno {
 	* @throws {Error}
 	*/
 	find(name, scopeIdx = this.stack.length - 1) {
-		// console.log("find", name, scopeIdx);
 		if (scopeIdx < 0) {
 			throw new Error(`Variable "${name}" not found`);
 		}
@@ -197,9 +218,9 @@ class Zeno {
 	* @throws {Error}
 	*/
 	set(name, value) {
-		if (value === undefined) {
-			throw new Error("Cannot set variable to undefined");
-		}
+		// if (value === undefined) {
+		// 	throw new Error("Cannot set variable to undefined");
+		// }
 		for (const scope of this.accessibleScopes()) {
 			if (scope.has(name)) {
 				scope.set(name, value);
@@ -257,6 +278,33 @@ class Zeno {
 		}
 	}
 
+	/** Simulates a range-based for loop
+	* @param {string} name - The name of the loop variable
+	* @param {any[]} range - The range to iterate over
+	* @param {number} section - The section the for loop belongs to
+	* @param {Function} body - The loop body
+	*
+	* @returns {boolean} - Places the return value of the body on the virtual stack if there is one and returns true, otherwise returns false
+	*/
+	rangedFor(name, range, section, body) {
+		if (range.length === 0) {
+			return 0;
+		}
+		for (const value of range) {
+			this.pushScope(Zeno.BLOCK, Zeno.RANGED_FOR, section);
+			this.set(name, value);
+			this.zap(section);
+			const res = body(value);
+			if (res !== undefined) {
+				this.set(Zeno.RETURN_VALUE, res);
+				return 1;
+			}
+			this.stack.pop();
+		}
+		return 0;
+	}
+
+
 	/** Simulates an if-else statement
 	* @param {Function} condition - The condition to check
 	* @param {number} section - The section the if statement belongs to
@@ -302,19 +350,11 @@ class Zeno {
 				if (arg.startsWith("^")) {
 					return arg.slice(1);
 				}
-				switch (typeof args[idx]) {
-					case "object":
-						return JSON.stringify(args[idx]);
-					case "string":
-						return `"${args[idx]}"`;
-					default:
-						return args[idx];
-				}
+				return Zeno.stringify(args[idx]);
 			}).join(", ") + ")";
 			this.zap(sourceSection);
 			this.pushScope(Zeno.FUNCTION, signature, sourceSection);
 			if (args.length !== argsNames.length) {
-				console.log(sourceSection, args, this.zaps.length, this.stack);
 				throw new Error(`Function "${name}" called with ${args.length} arguments, expected ${argsNames.length}`);
 			}
 			for (const i in argsNames) {
@@ -331,7 +371,8 @@ class Zeno {
 								this.currentScope().set(argsNames[i], scope.get(argsNames[i]));
 								return;
 							}
-						} while (this.scopeIdxIs(--scopeIdx, Zeno.BLOCK));
+						} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
+						throw new Error(`Variable "${argsNames[i].slice(1)}" not found`);
 					})();
 				} else {
 					this.currentScope().set(argsNames[i], args[i]);
@@ -364,7 +405,7 @@ class Zeno {
 	* @param {any} data - The data to log
 	*/
 	log(data) {
-		this.stack[0].set(Zeno.STDOUT, (this.stack[0].get(Zeno.STDOUT) ?? "") + JSON.stringify(data));
+		this.stack[0].set(Zeno.STDOUT, (this.stack[0].get(Zeno.STDOUT) ?? "") + Zeno.stringify(data));
 	}
 
 	/** Logs the current state of the stack
@@ -377,7 +418,7 @@ class Zeno {
 			for (let i = 0; i < data.length; i++) {
 				text += `Scope level ${i}: `;
 				for (const [key, value] of data[i]) {
-					text += `\n\t\u001b[33m"${key}"\u001b[0m: \u001b[36m${JSON.stringify(value)}\u001b[0m`;
+					text += `\n\t\u001b[33m"${key}"\u001b[0m: \u001b[36m${Zeno.stringify(value)}\u001b[0m`;
 				}
 				text += "\n";
 			}
@@ -395,7 +436,6 @@ class Zeno {
 				console.log(`Scope level ${i}: `);
 				process.stdout.write("\t");
 				for (const [key, value] of data[i]) {
-					// process.stdout.write(`"${key}": ${JSON.stringify(value)} `);
 					if (key.startsWith("[[")) {
 						process.stdout.write(`\u001b[36m${value} \u001b[0m `);
 						if (Zeno.SOURCE_SECTIONS.includes(key)) {
@@ -404,11 +444,11 @@ class Zeno {
 						continue;
 					}
 					if (key === Zeno.RETURN_VALUE) {
-						process.stdout.write(`\u001b[33m"${key}": ${JSON.stringify(value)}\u001b[0m `);
+						process.stdout.write(`\u001b[33m"${key}": ${Zeno.stringify(value)}\u001b[0m `);
 						continue;
 					}
 
-					process.stdout.write(`"${key}": ${JSON.stringify(value)} `);
+					process.stdout.write(`"${key}": ${Zeno.stringify(value)} `);
 				}
 			console.log();
 			}

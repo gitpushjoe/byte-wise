@@ -83,4 +83,10 @@ $.log({ adults: $.adults, children: $.children });
 
 $(10);
 
-slideshow(zeno, src);
+if (process.argv[3] === "print") {
+	$.print();
+} else if (process.argv[3] === "concise") {
+	$.printConcise();
+} else {
+	slideshow(zeno, sections);
+}

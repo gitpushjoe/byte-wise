@@ -4,36 +4,40 @@ const slideshow = require('../../slideshow');
 var source = 
 `const graph = { // 0 [
 	A: ["B", "F"],
-	B: ["C"],
+	B: ["E"],
 	C: ["A", "D"],
 	D: [],
-	E: ["F"],
-	F: ["D"]
+	E: ["A"],
+	F: ["D", "C"]
 }; // ] 0
 
 const visited = new Set(); // 1
 
-const dfs = (node, visited) => { // 2
+function dfs(node, visited, graph) { // 2
 	if (visited.has(node)) { // 3
-		return; // 7
+		return; // 4
 	}
-	visited.add(node); // 4
-	graph[node].forEach(dfs); // 5
+	visited.add(node); // 5
+	const neighbors = graph[node]; // 6
+	for (const neighbor of neighbors) { // 7
+		dfs(neighbor, visited, graph); // 8
+	} 
 }
 
-dfs("A"); // 6
-`;
+dfs("A"); // 10
+
+console.log(visited); // 11`;
 
 const zeno = new Zeno();
 const $ = zeno.proxy;
 
 $.graph = { 
 	A: ["B", "F"],
-	B: ["C"],
+	B: ["E"],
 	C: ["A", "D"],
 	D: [],
-	E: ["F"],
-	F: ["D", "E"]
+	E: ["A"],
+	F: ["D", "C"]
 }; 
 $(0);
 
@@ -42,22 +46,24 @@ $(1);
 
 const dfs = $("dfs", 2, ["node", "^visited", "^graph"], () => {
 	if ($.if(_ => $.visited.has($.node), 3, () => {
-		return [7, null];
+		return [4, undefined];
 	})) { return; }
 	$.visited.add($.node);
-	$(4);
-	for (const node of $.graph[$.node]) {
-		dfs(5, node, $.visited, $.graph);
-	}
-	$(5);
-	return [5, null];
+$(5);
+	$.neighbors = $.graph[$.node];
+$(6);
+	if ($.rangedFor("neighbor", $.neighbors, 7, () => {
+		dfs(8, $.neighbor, $.visited, $.graph);
+		$(8);
+	})) { return; }
+	return [9, undefined];
 });
 
-dfs(6, "A", $.visited, $.graph);
-$(6);
+dfs(10, "A", $.visited, $.graph);
+$(10);
 
 $.log($.visited);
-$(7);
+$(11);
 
 if (process.argv[3] === "print") {
 	$.print();
@@ -66,5 +72,3 @@ if (process.argv[3] === "print") {
 } else {
 	slideshow(zeno, source);
 }
-
-console.log('finished');

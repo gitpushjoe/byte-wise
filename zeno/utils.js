@@ -1,5 +1,5 @@
 function splitTextBySections(text) {
-  const lines = text.replace(/\t/g, '  ').split('\n');
+  const lines = text.replace(/\t/g, '    ').split('\n');
   let multilineRead = false;
   return lines.reduce((acc, line) => {
     if (line.match(/\/\/ \d+$/)) {

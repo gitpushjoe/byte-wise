@@ -27,15 +27,34 @@ async function slideshow(zeno, sections) {
 		const code = [];
 		for (let idx in sections) {
 			let { section, text } = sections[idx];
-			const startingSpaces = text.match(/^\s*/)[0].length;
 			const newLines = '\n'.repeat(text.match(/\n*$/)[0].length);
+			const isSourceSection = (() => {
+				for (let i = stack.length - 1; i >= 0; i--) {
+					if (stack[i].get(Zeno.SOURCE_SECTIONS).includes(section)) {
+						return true;
+					}
+					if (stack[i].get(Zeno.SCOPE_TYPE) === Zeno.FUNCTION) {
+						while (i >= 0) {
+							if (stack[i].get(Zeno.SOURCE_SECTIONS).includes(section) && stack[i].get(Zeno.SCOPE_TYPE) === Zeno.FUNCTION) {
+								return true;
+							}
+							i--;
+						}
+					}
+				}
+				return false;
+			})();
 			const sectionColor = section === currSection 
 				? combineColors(chalk.bgGreen, chalk.black)
-				: stack.some(s => s.get(Zeno.SOURCE_SECTIONS).includes(section))
+				: isSourceSection
 				? combineColors(chalk.bgYellow, chalk.black)
 				: chalk.white;
-			text = ' '.repeat(startingSpaces) + sectionColor(text.trim());
-			code.push({ section, text, newLines });
+			let outText = '';
+			for (const t of text.split('\n')) {
+				const startingSpaces = t.match(/^[ ]*/)[0].length;
+				outText += '' + ' '.repeat(startingSpaces) + '' + sectionColor(t.trim()) + '\n';
+			}
+			code.push({ section, text: outText.substr(0, outText.length - 2), newLines });
 		}
 		for (let i = stack.length - 1; i >= 0; i--) {
 			if (stack[i].get(Zeno.SCOPE_TYPE) !== Zeno.FUNCTION) {
@@ -59,12 +78,11 @@ async function slideshow(zeno, sections) {
 			stackData += '\n';
 			spaceCount += 2;
 			for (let [key, value] of scope) {
-				value = value instanceof Set ? JSON.stringify([...value]) : JSON.stringify(value);
 				if (key.startsWith('[[')) {
 					continue;
 				}
 				key = key.startsWith('%') ? chalk.yellow(key) : key;
-				stackData += `${' '.repeat(spaceCount)}| ${key}: ${value}\n`;
+				stackData += `${' '.repeat(spaceCount)}| ${key}: ${Zeno.stringify(value)}\n`;
 			}
 		}
 		process.stdout.write(interlace(codeText, stackData, 60, 70) + '\n');
