@@ -120,7 +120,7 @@ class Zeno {
 		const handler = {
 			apply: (_, __, args) => {
 				if (args.length === 1) {
-				this.zap(args[0]);
+					this.zap(args[0]);
 					return;
 				}
 				return this.function(...args);
@@ -344,38 +344,37 @@ class Zeno {
 	*
 	* @returns {Function} - A function that simulates the function call
 	*/
-	function(name, section, argsNames, body) { 
+	function(name, section, argNames, body) { 
 		return (function (sourceSection, ...args) {
-			const signature = `${name}(` + argsNames.map((arg, idx) => {
+			const signature = `${name}(` + argNames.map((arg, idx) => {
 				if (arg.startsWith("^")) {
 					return arg.slice(1);
 				}
 				return Zeno.stringify(args[idx]);
-			}).join(", ") + ")";
+				}).join(", ") + ")";
 			this.zap(sourceSection);
 			this.pushScope(Zeno.FUNCTION, signature, sourceSection);
-			if (args.length !== argsNames.length) {
-				throw new Error(`Function "${name}" called with ${args.length} arguments, expected ${argsNames.length}`);
+			if (args.length !== argNames.length) {
+				throw new Error(`Function "${name}" called with ${args.length} arguments, expected ${argNames.length}`);
 			}
-			for (const i in argsNames) {
-				if (argsNames[i].startsWith("^")) {
-					( () => {
+			for (const i in argNames) {
+				const [ argName, argValue ] = [ argNames[i], args[i] ];
+				if (argName.startsWith("^")) {
+					this.currentScope().set(argNames[i], ( () => {
 						let scopeIdx = this.stack.length - 2;
 						do {
 							const scope = this.stack[scopeIdx];
-							if (scope.has(argsNames[i].slice(1))) {
-								this.currentScope().set(argsNames[i], { reference: scopeIdx });
-								return;
+							if (scope.has(argName.slice(1))) {
+								return { reference: scopeIdx };
 							}
-							if (scope.has(argsNames[i])) {
-								this.currentScope().set(argsNames[i], scope.get(argsNames[i]));
-								return;
+						if (scope.has(argName)) {
+							return scope.get(argName);
 							}
 						} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
-						throw new Error(`Variable "${argsNames[i].slice(1)}" not found`);
-					})();
+						throw new Error(`Variable "${argName.slice(1)}" not found`);
+					})());
 				} else {
-					this.currentScope().set(argsNames[i], args[i]);
+					this.currentScope().set(argName, argValue);
 				}
 			}
 			this.zap(section);
@@ -386,7 +385,7 @@ class Zeno {
 				this.set(Zeno.RETURN_VALUE, result);
 				this.zap(resSection);
 				while (this.currentScope().get(Zeno.SCOPE_TYPE) !== Zeno.FUNCTION) {
-				this.stack.pop();
+					this.stack.pop();
 				}
 			} else {
 				if (res === undefined) {
@@ -398,7 +397,7 @@ class Zeno {
 			}
 			this.stack.pop();
 			return result;
-			}).bind(this);
+		}).bind(this);
 	}
 
 	/** Logs a message to the virtual stdout
@@ -450,7 +449,7 @@ class Zeno {
 
 					process.stdout.write(`"${key}": ${Zeno.stringify(value)} `);
 				}
-			console.log();
+				console.log();
 			}
 			console.log();
 		});
