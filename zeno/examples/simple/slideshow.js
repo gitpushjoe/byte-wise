@@ -88,5 +88,5 @@ if (process.argv[3] === "print") {
 } else if (process.argv[3] === "concise") {
 	$.printConcise();
 } else {
-	slideshow(zeno, sections);
+	slideshow(zeno, src);
 }
