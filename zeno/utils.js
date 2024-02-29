@@ -1,5 +1,5 @@
 function splitTextBySections(text) {
-  const lines = text.split('\n');
+  const lines = text.replace(/\t/g, '  ').split('\n');
   let multilineRead = false;
   return lines.reduce((acc, line) => {
     if (line.match(/\/\/ \d+$/)) {
@@ -34,7 +34,7 @@ function splitTextBySections(text) {
 
 function truncate_or_pad(s, length){
   if(lengthWithoutEscapes(s) > length){
-    return s.substring(0, length - 3) + "...";
+    return s.substring(0, length - 3) + "..." + "\u001b[0m";
   } else {
     while(lengthWithoutEscapes(s) < length){
       s += " ";

@@ -34,7 +34,7 @@ async function slideshow(zeno, sections) {
 				: stack.some(s => s.get(Zeno.SOURCE_SECTIONS).includes(section))
 				? combineColors(chalk.bgYellow, chalk.black)
 				: chalk.white;
-			text = ' '.repeat(startingSpaces * 5) + sectionColor(text.trim());
+			text = ' '.repeat(startingSpaces) + sectionColor(text.trim());
 			code.push({ section, text, newLines });
 		}
 		for (let i = stack.length - 1; i >= 0; i--) {
@@ -59,7 +59,7 @@ async function slideshow(zeno, sections) {
 			stackData += '\n';
 			spaceCount += 2;
 			for (let [key, value] of scope) {
-				value = JSON.stringify(value);
+				value = value instanceof Set ? JSON.stringify([...value]) : JSON.stringify(value);
 				if (key.startsWith('[[')) {
 					continue;
 				}
@@ -67,7 +67,6 @@ async function slideshow(zeno, sections) {
 				stackData += `${' '.repeat(spaceCount)}| ${key}: ${value}\n`;
 			}
 		}
-
 		process.stdout.write(interlace(codeText, stackData, 60, 70) + '\n');
 	};
 

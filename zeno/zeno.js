@@ -9,7 +9,7 @@ class Zap { // short for Zeno Snapshots
 	/**
 	 * @param {number} section
 	 * @param {Stack} snapshotData
-	 */
+	*/
 	constructor(section, snapshotData) {
 		this.section = section;
 		this.snapshotData = snapshotData;
@@ -125,13 +125,34 @@ class Zeno {
 		return this.stack[this.stack.length - 1];
 	}
 
-	/** Searches for a variable in the current scope and all accessible scopes
+	/** Searches for the value of a referenced variable in the current scope and all accessible scopes
 	* @param {string} - The name of the variable to search for
+	* @param {number} - The index of the scope to start at (defaults to the current scope)
 	* @returns {any}
 	* @throws {Error}
 	*/
-	find(name) {
-		for (const scope of this.accessibleScopes()) {
+	findReference(name, scopeIdx = this.stack.length - 1) {
+		scopeIdx ??= this.stack.length - 1;
+		// console.log("findReference", name, scopeIdx);
+		while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
+		return this.find(name, scopeIdx);
+	}
+
+	/** Searches for a variable in the current scope and all accessible scopes
+	* @param {string} - The name of the variable to search for
+	* @param {number} - The index of the scope to start at (defaults to the current scope)
+	* @returns {any}
+	* @throws {Error}
+	*/
+	find(name, scopeIdx = this.stack.length - 1) {
+		// console.log("find", name, scopeIdx);
+		if (scopeIdx < 0) {
+			throw new Error(`Variable "${name}" not found`);
+		}
+		for (const scope of this.accessibleScopes(scopeIdx)) {
+			if (scope.has(`^${name}`)) {
+				return this.findReference(name, scopeIdx);
+			}
 			if (scope.has(name)) {
 				return scope.get(name);
 			}
@@ -149,10 +170,10 @@ class Zeno {
 	}
 
 	/** Returns an iterator over all accessible scopes
+	 * @param {number=} startIdx - The index to start at
 	* @returns {IterableIterator<Scope>}
 	*/
-	*accessibleScopes() {
-		let scopeIdx = this.stack.length - 1;
+	*accessibleScopes(scopeIdx = this.stack.length - 1) {
 		do {
 			yield this.stack[scopeIdx];
 		} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
@@ -277,7 +298,19 @@ class Zeno {
 	*/
 	function(name, section, argsNames, body) { 
 		return (function (sourceSection, ...args) {
-			const signature = `${name}(${args.join(", ")})`;
+			const signature = `${name}(` + argsNames.map((arg, idx) => {
+				if (arg.startsWith("^")) {
+					return arg.slice(1);
+				}
+				switch (typeof args[idx]) {
+					case "object":
+						return JSON.stringify(args[idx]);
+					case "string":
+						return `"${args[idx]}"`;
+					default:
+						return args[idx];
+				}
+			}).join(", ") + ")";
 			this.zap(sourceSection);
 			this.pushScope(Zeno.FUNCTION, signature, sourceSection);
 			if (args.length !== argsNames.length) {
@@ -285,7 +318,24 @@ class Zeno {
 				throw new Error(`Function "${name}" called with ${args.length} arguments, expected ${argsNames.length}`);
 			}
 			for (const i in argsNames) {
-				this.currentScope().set(argsNames[i], args[i]);
+				if (argsNames[i].startsWith("^")) {
+					( () => {
+						let scopeIdx = this.stack.length - 2;
+						do {
+							const scope = this.stack[scopeIdx];
+							if (scope.has(argsNames[i].slice(1))) {
+								this.currentScope().set(argsNames[i], { reference: scopeIdx });
+								return;
+							}
+							if (scope.has(argsNames[i])) {
+								this.currentScope().set(argsNames[i], scope.get(argsNames[i]));
+								return;
+							}
+						} while (this.scopeIdxIs(--scopeIdx, Zeno.BLOCK));
+					})();
+				} else {
+					this.currentScope().set(argsNames[i], args[i]);
+				}
 			}
 			this.zap(section);
 			let [ resSection, result ] = [ undefined, undefined];
