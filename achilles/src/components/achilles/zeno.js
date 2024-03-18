@@ -1,16 +1,17 @@
-const clone = require("rfdc")();
+const clone = structuredClone;
 if (typeof process === "undefined") {
 	var process = {
 		stdout: {
 			write: console.log
 		}
 	};
+
 }
 
 /** @typedef {Map<string, any>} Scope */
 /** @typedef {Scope[]} Stack */
 
-class Zap { // short for Zeno Snapshots
+export class Zap { // short for Zeno Snapshots
 
 	/**
 	 * @param {number} section
@@ -20,6 +21,46 @@ class Zap { // short for Zeno Snapshots
 		this.section = section;
 		this.snapshotData = snapshotData;
 	}
+
+	scopeIdxIs(idx, type) {
+		return this.snapshotData[idx].get(Zeno.SCOPE_TYPE) === type;
+	}
+
+	findReference(name, scopeIdx = this.snapshotData.length - 1) {
+		scopeIdx ??= this.snapshotData.length - 1;
+		while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
+		return this.find(name, scopeIdx);
+	}
+
+	find(name, scopeIdx = this.snapshotData.length - 1) {
+		if (scopeIdx < 0) {
+			throw new Error(`Variable "${name}" not found`);
+		}
+		for (const scope of this.accessibleScopes(scopeIdx)) {
+			if (scope.has(`^${name}`)) {
+				return this.findReference(name, scopeIdx);
+			}
+			if (scope.has(name)) {
+				return scope.get(name);
+			}
+		}
+		throw new Error(`Variable "${name}" not found`);
+	}
+
+	safeFind(name, scopeIdx = this.snapshotData.length - 1) {
+		try {
+			return this.find(name, scopeIdx);
+		} catch (e) {
+			return undefined;
+		}
+	}
+
+	*accessibleScopes(scopeIdx = this.snapshotData.length - 1) {
+		do {
+			yield this.snapshotData[scopeIdx];
+		} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
+	}
+
 }
 
 /**
@@ -36,7 +77,7 @@ class Zap { // short for Zeno Snapshots
 	 * }} ZenoProxy
 */
 
-class Zeno {
+export default class Zeno {
 
 	static get SCOPE_TYPE() {
 		return "[[SCOPE_TYPE]]";
@@ -131,7 +172,7 @@ class Zeno {
 		const handler = {
 			apply: (_, __, args) => {
 				if (args.length === 1) {
-					this.zap(args[0]);
+				this.zap(args[0]);
 					return;
 				}
 				return this.function(...args);
@@ -220,7 +261,6 @@ class Zeno {
 		if (!Array.isArray(sourceSections)) {
 			sourceSections = [sourceSections];
 		}
-		console.log("Pushing scope", name, "of type", type, "with source sections", sourceSections, "onto the stack", [...this.stack]);
 		this.stack.push(new Map([[Zeno.SCOPE_TYPE, type], [Zeno.SCOPE_NAME, name], [Zeno.SOURCE_SECTIONS, sourceSections]]));
 	}
 
@@ -235,7 +275,6 @@ class Zeno {
 		// }
 		for (const scope of this.accessibleScopes()) {
 			if (scope.has(name)) {
-				console.log("Setting", name, "to", value, "in scope", scope.get(Zeno.SCOPE_NAME));
 				scope.set(name, value);
 				return;
 			}
@@ -298,7 +337,7 @@ class Zeno {
 	 * @param {Function} body - The loop body
 	 *
 	 * @returns {boolean} - Places the return value of the body on the virtual stack if there is one and returns true, otherwise returns false
-	 */
+	*/
 	while(condition, section, body) {
 		while (condition()) {
 			this.pushScope(Zeno.BLOCK, Zeno.WHILE, section);
@@ -386,7 +425,7 @@ class Zeno {
 					return arg.slice(1);
 				}
 				return Zeno.stringify(args[idx]);
-				}).join(", ") + ")";
+			}).join(", ") + ")";
 			this.zap(sourceSection);
 			this.pushScope(Zeno.FUNCTION, signature, sourceSection);
 			if (args.length !== argNames.length) {
@@ -402,8 +441,8 @@ class Zeno {
 							if (scope.has(argName.slice(1))) {
 								return { reference: scopeIdx };
 							}
-						if (scope.has(argName)) {
-							return scope.get(argName);
+							if (scope.has(argName)) {
+								return scope.get(argName);
 							}
 						} while (this.scopeIdxIs(scopeIdx--, Zeno.BLOCK));
 						throw new Error(`Variable "${argName.slice(1)}" not found`);
@@ -420,7 +459,7 @@ class Zeno {
 				this.set(Zeno.RETURN_VALUE, result);
 				this.zap(resSection);
 				while (this.currentScope().get(Zeno.SCOPE_TYPE) !== Zeno.FUNCTION) {
-					this.stack.pop();
+				this.stack.pop();
 				}
 			} else {
 				if (res === undefined) {
@@ -432,7 +471,7 @@ class Zeno {
 			}
 			this.stack.pop();
 			return result;
-		}).bind(this);
+			}).bind(this);
 	}
 
 	/** Logs a message to the virtual stdout
@@ -484,11 +523,9 @@ class Zeno {
 
 					process.stdout.write(`"${key}": ${Zeno.stringify(value)} `);
 				}
-				console.log();
+			console.log();
 			}
 			console.log();
 		});
 	}
 }
-
-module.exports = Zeno;
