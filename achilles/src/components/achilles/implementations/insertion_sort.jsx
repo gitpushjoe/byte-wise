@@ -2,7 +2,7 @@ import { AchillesStage } from '../achilles';
 import { addArrayItems, addArrayKey, addArrayPointer } from './array_helpers';
 import { NullSprite } from 'sharc-js/Sprites';
 import Zeno from '../zeno';
-import { Colors } from 'sharc-js/Utils';
+import { Colors } from 'sharc-js/dist/';
 import Palette from '../palette';
 import Constants from '../constants';
 
@@ -13,7 +13,7 @@ export default class InsertionSort extends AchillesStage {
 	}
 
 	initialize(input) {
-		this.playground.removeChildren(...this.playground.children);
+		this.playground.removeAllChildren();
 		this.playground.addChildren(
 			new NullSprite({ name: '!arr' })
 				.addChildren(
@@ -77,8 +77,8 @@ console.log(arr); // 11
 			return [ undefined, 999 ];
 		});
 
-		$.arr = this.playground.children[0].children.filter(item => {
-			return item.name.startsWith("arritem/");
+		$.arr = this.playground.children[0].findChildrenWhere(sprite => {
+			return sprite.name.startsWith("arritem/");
 		}).map(item => {
 			return item.details.value;
 		});
@@ -94,9 +94,9 @@ console.log(arr); // 11
 		console.log(`received zap ${idx}`);
 		const zap = this.zaps[idx];
 		const arr = zap.find("arr");
-		this.playground.children[0].removeChildren(...this.playground.children[0].children.filter(c => c.name.startsWith("arritem/")));
-		this.playground.children[0].findChild("!arr-pointers").removeChildren(...this.playground.children[0].findChild("!arr-pointers").children);
-		this.playground.children[0].findChild("!arr-key").removeChildren(...this.playground.children[0].findChild("!arr-key").children);
+		this.playground.children[0].removeDescendantsWhere(c => c.name.startsWith("arritem/"));
+		this.playground.children[0].findChild("!arr-pointers").removeAllChildren();
+		this.playground.children[0].findChild("!arr-key").removeAllChildren();
 		addArrayItems({
 			root: this.playground.children[0],
 			items: arr,

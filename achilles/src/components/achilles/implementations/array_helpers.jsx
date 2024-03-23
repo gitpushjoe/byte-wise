@@ -45,9 +45,9 @@ export function ModifiableArrayItem({ value, idx }) {
 					color: Colors.Green,
 					positionIsCenter: true,
 			}))
-			.on('click', function () {
-				this.parent.details.value++;
-				this.parent.children[0].text = this.parent.details.value;
+			.on('click', sprite => {
+				sprite.parent.details.value++;
+				sprite.parent.children[0].text = sprite.parent.details.value;
 		}),
 		new Rect({
 			name: `arritem/${idx}/minus-hitbox`,
@@ -65,10 +65,9 @@ export function ModifiableArrayItem({ value, idx }) {
 					color: Colors.Red,
 					positionIsCenter: true,
 			}))
-			.on('click', function () {
-				console.log(this.name, this.parent.details.value, this.parent.children[0].text);
-				this.parent.details.value--;
-				this.parent.children[0].text = this.parent.details.value;
+			.on('click', sprite => {
+				sprite.parent.details.value--;
+				sprite.parent.children[0].text = sprite.parent.details.value;
 		})
 	);
 	return item;

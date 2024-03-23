@@ -3,6 +3,7 @@ import { Stage } from 'sharc-js/Stage';
 import Palette from './palette';
 import { LabelSprite, NullSprite } from 'sharc-js/Sprites';
 import { Position as p } from 'sharc-js/Utils';
+import { Server } from 'socket.io';
 
 function abstract() {
 	throw new Error('This method is abstract and must be implemented in a derived class.');
@@ -44,8 +45,8 @@ export class AchillesStage extends Stage {
 						text: 'Start',
 						position: p(0, -300),
 						fontSize: 40,
-						}).on('release', function () {
-							const stage = this.root.stage;
+						}).on('release', sprite => {
+							const stage = sprite.root.stage;
 							if (!stage.validate()) {
 								return;
 							}
@@ -53,7 +54,7 @@ export class AchillesStage extends Stage {
 								stage.prepareUI();
 								stage.zaps = stage.execute();
 								stage.setState(AchillesStage.STATES.PAUSED);
-								this.text = 'Play';
+								sprite.text = 'Play';
 								stage.loadZap(0);
 							}
 					}),
@@ -65,7 +66,6 @@ export class AchillesStage extends Stage {
 				}
 			})
 		);
-		console.log(this.root.children);
 		this.initialize(initialInput);
 		this.loop();
 	}
@@ -82,8 +82,8 @@ export class AchillesStage extends Stage {
 				text: 'Back',
 				position: p(-150, -300),
 				fontSize: 40,
-			}).on('release', function () {
-				const stage = this.root.stage;
+			}).on('release', sprite => {
+				const stage = sprite.root.stage;
 				if (stage.getState() === AchillesStage.STATES.PLAYING) {
 					return;
 				}
@@ -98,17 +98,14 @@ export class AchillesStage extends Stage {
 				text: 'Next',
 				position: p(150, -300),
 				fontSize: 40,
-			}).on('release', function () {
-				const stage = this.root.stage;
+			}).on('release', sprite => {
+				const stage = sprite.root.stage;
 				if (stage.getState() === AchillesStage.STATES.PLAYING) {
-						console.log('playing');
 					return;
 				}
 				if (stage.zapIdx === stage.zaps.length - 1) {
-					console.log('end of zaps');
 					return;
 				}
-					console.log(stage.zapIdx + 1);
 				stage.loadZap(stage.zapIdx + 1);
 			}),
 		);
@@ -129,6 +126,11 @@ export class AchillesStage extends Stage {
 		this.zapIdx = idx;
 	}
 
+	/**
+	 * @param {number} idx 
+	 *
+	 * @returns {NullSprite}
+	 */
 	get playground() {
 		return this.root.children[0];
 	}

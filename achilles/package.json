@@ -12,7 +12,8 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sharc-js": "^1.4.1"
+    "sharc-js": "^2.0.0",
+    "socket.io": "^4.7.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
