@@ -1,31 +1,14 @@
-import { AchillesStage } from '../achilles';
-import { addArrayItems, addArrayKey, addArrayPointer } from './array_helpers';
-import { NullSprite } from 'sharc-js/Sprites';
+import { ArrayItem, addArrayKey, addArrayPointer } from './array_helpers';
 import Zeno from '../zeno';
-import { Colors } from 'sharc-js/dist/';
+import { Colors } from 'sharc-js/Utils';
 import Palette from '../palette';
 import Constants from '../constants';
+import ArrayStage from './array_stage';
 
-export default class InsertionSort extends AchillesStage {
+export default class InsertionSort extends ArrayStage {
 
 	constructor(canvas) {
-		super(canvas, [ 4, 3, 9, 8, 6, 1, 7, 5, 2 ]);
-	}
-
-	initialize(input) {
-		this.playground.removeAllChildren();
-		this.playground.addChildren(
-			new NullSprite({ name: '!arr' })
-				.addChildren(
-					new NullSprite({ name: '!arr-pointers' }),
-					new NullSprite({ name: '!arr-key' }),
-			),
-		);
-		addArrayItems({
-			root: this.playground.children[0],
-			items: input,
-			modifiable: true,
-		});
+		super(canvas);
 	}
 
 	validate() {
@@ -54,6 +37,9 @@ console.log(arr); // 11
 	}
 
 	execute() {
+
+		// this.root.findDescendant("arritem/other/additem-hitbox").removeSelf();
+
 		const zeno = new Zeno();
 		const $ = zeno.proxy;
 		const insertionSort = $("insertionSort", 2, ["^arr"], () => {
@@ -71,14 +57,15 @@ console.log(arr); // 11
 					$(9);
 				});
 				$.arr[$.j + 1] = $.key;
-				console.log($.i, $.arr);
 				$(10);
 			});
-			return [ undefined, 999 ];
+			return [ 999, undefined ];
 		});
 
 		$.arr = this.playground.children[0].findChildrenWhere(sprite => {
-			return sprite.name.startsWith("arritem/");
+			return sprite.name.startsWith("arritem/") && !sprite.name.startsWith("arritem/other");
+		}).sort((a, b) => {
+			return parseInt(a.name.split("/")[1]) - parseInt(b.name.split("/")[1]);
 		}).map(item => {
 			return item.details.value;
 		});
@@ -90,33 +77,154 @@ console.log(arr); // 11
 		return zeno.zaps;
 	}
 
-	loadZap(idx) {
-		console.log(`received zap ${idx}`);
-		const zap = this.zaps[idx];
-		const arr = zap.find("arr");
-		this.playground.children[0].removeDescendantsWhere(c => c.name.startsWith("arritem/"));
-		this.playground.children[0].findChild("!arr-pointers").removeAllChildren();
-		this.playground.children[0].findChild("!arr-key").removeAllChildren();
-		addArrayItems({
-			root: this.playground.children[0],
-			items: arr,
-			modifiable: false,
-		});
-		if (zap.safeFind("i") !== undefined) {
-			addArrayPointer({
-				root: this.playground.children[0].findChild("!arr-pointers"),
-				idx: zap.find("i"),
-				color: Palette.POINTER_DEFAULT,
-				text: 'i',
+	interpolate() {
+		super.interpolate();
+		if (this.zaps[this.zapIdx].section === 9) {
+			const j = this.playground.findDescendant('arrpointer/j');
+			const key = this.playground.findDescendant('!arr-key').children[0];
+			const idx = this.zaps[this.zapIdx].find("j");
+			const anim = {
+				duration: 20,
+				property: 'centerX',
+				from: null,
+				to: idx * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
+			};
+			j.channels[0].push(anim);
+			key.channels[0].push(anim);
+
+		} else if (this.zaps[this.zapIdx].section === 4) {
+			const i = this.playground.findDescendant('arrpointer/i');
+			const j = this.playground.findDescendant('arrpointer/j');
+			if (!i) {
+				return;
+			}
+			const idx = this.zaps[this.zapIdx].find("i");
+			i.channels[0].push({
+				duration: 15,
+				property: 'centerX',
+				from: null,
+				to: idx * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
 			});
+			j.createChannels(1);
+			j.distribute([[{
+				duration: 15,
+				property: 'alpha',
+				from: null,
+				to: 0,
+			}], [{
+				duration: 15,
+				property: 'centerY',
+				from: null,
+				to: y => y + 10,
+			}]]);
+			j.children[0].channels[0].push({
+				duration: 15,
+				property: 'alpha',
+				from: null,
+				to: 0,
+			});
+
+		} else if (this.zaps[this.zapIdx].section === 10) {
+			const key = this.playground.findDescendant('!arr-key').children[0];
+			this.playground.findDescendant('!arr-key').bringToFront();
+			key.channels[0].push({
+				duration: 15,
+				property: 'center',
+				from: null,
+				to: (center) => { return {
+					x: center.x + Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
+					y: 0
+				}; },
+			});
+
+		} else if (this.zaps[this.zapIdx].section === 7) {
+			const jIdx = this.zaps[this.zapIdx].find("j");
+			const item = this.playground.findDescendant(`arritem/${jIdx}`);
+			const key = this.playground.findDescendant('!arr-key').children[0];
+			const shake = [{
+				duration: 3,
+				property: 'rotation',
+				from: null,
+				to: -20,
+			}, {
+				duration: 6,
+				property: 'rotation',
+				from: null,
+				to: 20,
+			}, {
+				duration: 3,
+				property: 'rotation',
+				from: null,
+				to: 0,
+			}];
+			const oppositeShake = shake.map(anim => { return { ...anim, to: -anim.to }; });
+			item.channels[0].push(shake);
+			key.channels[0].push(oppositeShake);
+
+		} else if (this.zaps[this.zapIdx].section === 8) {
+			const tempItem = ArrayItem({
+				value: this.zaps[this.zapIdx].find("arr")[this.zaps[this.zapIdx].find("j")],
+				idx: this.zaps[this.zapIdx].find("j"),
+			});
+			tempItem.color = Colors.Green;
+			this.playground.children[0].addChild(tempItem);
+			tempItem.channels[0].push({
+				duration: 15,
+				property: 'centerX',
+				from: null,
+				to: x => x + Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
+			});
+
+		} else if (this.zaps[this.zapIdx].section === 5) {
+			const fadeIn = {
+				duration: 20,
+				property: 'alpha',
+				from: 0,
+				to: 1,
+			};
+			const dropIn = {
+				duration: 20,
+				property: 'centerY',
+				from: null,
+				to: y => y + 10,
+				easing: (t) => 1 - t,
+			};
+			const pointer = this.addPointer("j", this.zaps[this.zapIdx], Palette.POINTER_HIGHLIGHT);
+			pointer.createChannels(1).distribute([[fadeIn], [dropIn]]);
+			pointer.children[0].channels[0].push(fadeIn);
+		
+		} else if (this.zaps[this.zapIdx].section === 6) {
+			const arrKey = addArrayKey({
+				root: this.playground.children[0].findChild("!arr-key"),
+				idx: this.zaps[this.zapIdx].find("i"),
+				value: this.zaps[this.zapIdx].find("key"),
+				color: Palette.KEY_HIGHLIGHT,
+				text: 'key',
+			});
+			arrKey.createChannels(1).distribute([{
+				duration: 20,
+				property: 'centerX',
+				from: null,
+				to: x => x - Constants.ARR_ITEM_SIZE - Constants.ARR_ITEM_MARGIN,
+			}, {
+				duration: 20,
+				property: 'centerY',
+				from: null,
+				to: -(Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
+			}]);
+			this.arr.findChild("!arr-key").bringToFront();
+		}
+		
+	}
+
+	loadZap(idx) {
+		const zap = this.zaps[idx];
+		this.setArray(zap.find("arr"));
+		if (zap.safeFind("i") !== undefined) {
+			this.addPointer("i", zap);
 		}
 		if (zap.safeFind("j") !== undefined) {
-			addArrayPointer({
-				root: this.playground.children[0].findChild("!arr-pointers"),
-				idx: zap.find("j"),
-				color: Palette.POINTER_HIGHLIGHT,
-				text: 'j',
-			});
+			this.addPointer("j", zap, Palette.POINTER_HIGHLIGHT);
 		}
 		if (zap.safeFind("key") !== undefined && zap.section !== 10) {
 			addArrayKey({
@@ -145,8 +253,7 @@ console.log(arr); // 11
 			}
 			if (i < (zap.safeFind("i")  ?? -1)) {
 				c.color = Colors.Green;
-			} else if (zap.safeFind("i") === undefined && this.zapIdx > 2) {
-				console.log(this.zapIdx, +zap.safeFind("i"));
+			} else if (zap.safeFind("i") === undefined && this.zapIdx > 4) {
 				c.color = Colors.Green;
 			} else {
 				c.color = Colors.White;

@@ -12,6 +12,9 @@ const Palette = {
 
 	KEY_DEFAULT: Colors.Gold,
 	KEY_STROKE: Colors.Yellow,
+
+	BASE_TEXT: Colors.White,
+
 }
 
 export default Palette;

@@ -10,10 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
+    "process": "^0.11.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sharc-js": "^2.0.0",
-    "socket.io": "^4.7.5"
+    "sharc-js": "^2.0.1",
+    "socket.io": "^4.7.5",
+    "stream-browserify": "^3.0.0",
+    "vite": "^5.2.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
@@ -22,7 +26,6 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.0",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.1.6"
+    "eslint-plugin-react-refresh": "^0.4.5"
   }
 }
