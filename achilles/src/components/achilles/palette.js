@@ -15,6 +15,11 @@ const Palette = {
 
 	BASE_TEXT: Colors.White,
 
+	ELEMENT_LEFT: Colors.Aqua,
+	ELEMENT_LEFT_STROKE: Colors.Blue,
+
+	ELEMENT_RIGHT: Colors.Yellow,
+	ELEMENT_RIGHT_STROKE: Colors.GoldenRod,
 }
 
 export default Palette;

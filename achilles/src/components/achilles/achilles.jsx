@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Stage } from 'sharc-js/Stage';
 import Palette from './palette';
 import { LabelSprite, NullSprite, Rect, TextSprite } from 'sharc-js/Sprites';
-import { Position as p } from 'sharc-js/Utils';
+import { Colors, Position as p } from 'sharc-js/Utils';
 import { DRAG_EVENT_LISTENERS, CLICK_POSITION, RAMP_CALLBACK_LISTENERS } from './helpers';
 
 function abstract() {
@@ -22,15 +22,37 @@ export class AchillesStage extends Stage {
 
 	static get uiButtonProps() {
 		return {
-			fontSize: 40,
 			positionIsCenter: true,
-			backgroundColor: Palette.ELEMENT_DEFAULT,
 			backgroundRadius: 10,
+			bold: true,
+			color: Colors.LightCyan,
+			effects: ctx => {
+				ctx.filter = `drop-shadow(1px 1px 3px dark-gray)`;
+			},
+			fontSize: 40,
 		};
 	}
 
+	static get DEFAULT_INPUT() { return abstract(); }
+
 	zaps = [];
 	zapIdx = 0;
+	input = this.constructor.DEFAULT_INPUT;
+
+	static get uiButtonStartListener() {
+		return (sprite, _, __, stage) => {
+			if (!stage.validate()) {
+				return;
+			}
+			if (stage.getState() === AchillesStage.STATES.INITIAL) {
+				stage.zaps = stage.execute();
+				stage.prepareUI();
+				stage.setState(AchillesStage.STATES.PAUSED);
+				sprite.text = 'Play';
+				stage.loadZap(0);
+			}
+		}
+	}
 
 	constructor(canvas, initialInput) {
 		super(canvas, 'centered', Palette.BG);
@@ -68,21 +90,8 @@ export class AchillesStage extends Stage {
 						...AchillesStage.uiButtonProps,
 						name: 'main-button',
 						text: 'Start',
-						position: p(0, -300),
-						fontSize: 40,
-						}).on('release', sprite => {
-							const stage = sprite.root.stage;
-							if (!stage.validate()) {
-								return;
-							}
-							if (stage.getState() === AchillesStage.STATES.INITIAL) {
-								stage.zaps = stage.execute();
-								stage.prepareUI();
-								stage.setState(AchillesStage.STATES.PAUSED);
-								sprite.text = 'Play';
-								stage.loadZap(0);
-							}
-					}),
+						position: p(0, -285),
+						}).on('release', AchillesStage.uiButtonStartListener)
 			),
 			new NullSprite({ 
 				name: 'state',
@@ -92,7 +101,13 @@ export class AchillesStage extends Stage {
 			}),
 			new NullSprite({ name: 'dummy' }),
 		);
-		this.initialize(initialInput);
+		this.on('scroll', (_, event) => {
+			this.playground.scale = {
+				x: Math.min(1, Math.max(this.playground.scale.x - event.deltaY / 1000, 0.5)),
+				y: Math.min(1, Math.max(this.playground.scale.y - event.deltaY / 1000, 0.5)),
+			};
+		});
+		this.initialize(this.input);
 		this.loop();
 	}
 
@@ -106,12 +121,10 @@ export class AchillesStage extends Stage {
 				...AchillesStage.uiButtonProps,
 				name: 'back-button',
 				text: 'Back',
-				position: p(-150, -300),
-				fontSize: 40,
+				position: p(-150, -285),
 				})
 				.on('click', RAMP_CALLBACK_LISTENERS.click())
-				.on('hold', RAMP_CALLBACK_LISTENERS.hold(sprite => {
-					const stage = sprite.root.stage;
+				.on('hold', RAMP_CALLBACK_LISTENERS.hold((_, __, ___, stage) => {
 					if (stage.getState() === AchillesStage.STATES.PLAYING) {
 						return;
 					}
@@ -119,17 +132,15 @@ export class AchillesStage extends Stage {
 						return;
 					}
 					stage.loadZap(--stage.zapIdx);
-				})),
+			})),
 			new LabelSprite({
 				...AchillesStage.uiButtonProps,
 				name: 'next-button',
 				text: 'Next',
-				position: p(150, -300),
-				fontSize: 40,
+				position: p(150, -285),
 				})
 				.on('click', RAMP_CALLBACK_LISTENERS.click())
-				.on('hold', RAMP_CALLBACK_LISTENERS.hold(sprite => {
-					const stage = sprite.root.stage;
+				.on('hold', RAMP_CALLBACK_LISTENERS.hold((_, __, ___, stage) => {
 					if (stage.getState() === AchillesStage.STATES.PLAYING) {
 						return;
 					}
@@ -137,24 +148,64 @@ export class AchillesStage extends Stage {
 						return;
 					}
 					stage.loadZap(++stage.zapIdx);
-				})),
+			})),
+			new LabelSprite({
+				...AchillesStage.uiButtonProps,
+				name: 'start-button',
+				text: '#1',
+				position: p(-150, -350),
+				})
+				.on('release', (_, __, ___, stage) => {
+					if (stage.getState() === AchillesStage.STATES.PLAYING) {
+						return;
+					}
+					stage.loadZap(0);
+			}),
+			new LabelSprite({
+				...AchillesStage.uiButtonProps,
+				name: 'end-button',
+				text: `#${this.zaps.length}`,
+				position: p(150, -350),
+				})
+				.on('release', (_, __, ___, stage) => {
+					if (stage.getState() === AchillesStage.STATES.PLAYING) {
+						return;
+					}
+					stage.loadZap(stage.zaps.length - 1);
+			}),
+			new LabelSprite({
+				...AchillesStage.uiButtonProps,
+				name: 'reset-button',
+				text: 'Edit',
+				position: p(0, -350),
+				})
+				.on('release', (sprite, _, __, stage) => {
+					if (stage.getState() === AchillesStage.STATES.PLAYING) {
+						return;
+					}
+					stage.setState(AchillesStage.STATES.INITIAL);
+					stage.initialize();
+					sprite.root.findDescendant('main-button').text = 'Start';
+					sprite.root.findDescendant('main-button').removeEventListener('release');
+					sprite.root.findDescendant('main-button').on('release', AchillesStage.uiButtonStartListener);
+					sprite.root.findDescendant('step-counter').removeSelf();
+					sprite.root.findDescendant('back-button').removeSelf();
+					sprite.root.findDescendant('next-button').removeSelf();
+					sprite.root.findDescendant('start-button').removeSelf();
+					sprite.root.findDescendant('end-button').removeSelf();
+					sprite.root.findDescendant('reset-button').removeSelf();
+			}),
 			new TextSprite({
 				name: 'step-counter',
 				text: `Step: 0 / ${this.zaps.length} | Section: ${this.zaps[this.zapIdx]?.section}`,
-				position: p(-675, 350),
 				fontSize: 40,
+				position: p(-this.width / 2 + 20, this.height / 2 - 20),
 				color: Palette.ELEMENT_DEFAULT,
 			}),
 		);
 		const mainButton = this.ui.findChild('main-button');
 		mainButton.removeEventListener('release');
-		// mainButton.on('beforeDraw', sprite => {
-		// 	const stage = sprite.root.stage;
-		// 	sprite.text = (stage.zapIdx === stage.zaps.length - 1) ? 'Done!' : 
-		// 		(stage.getState() === AchillesStage.STATES.INITIAL ? 'Start' : 'Play');
-		// });
-		mainButton.on('release', sprite => {
-			const stage = sprite.root.stage;
+		mainButton.on('release', (sprite, _, __, stage) => {
 			if (stage.getState() === AchillesStage.STATES.PAUSED) {
 				if (stage.zapIdx === stage.zaps.length - 1) {
 					return;
@@ -178,17 +229,18 @@ export class AchillesStage extends Stage {
 	execute() { abstract(); }
 
 	interpolate() {
-		console.log(`interpolating ${this.zapIdx}`);
 		if (++this.zapIdx === this.zaps.length) {
 			this.zapIdx = this.zaps.length - 1;
 			this.ui.findChild('back-button').enabled = true;
 			this.ui.findChild('next-button').enabled = true;
+			this.ui.findChild('start-button').enabled = true;
+			this.ui.findChild('end-button').enabled = true;
+			this.ui.findChild('reset-button').enabled = true;
 			this.ui.findChild('main-button').text = 'Play';
 			this.setState(AchillesStage.STATES.PAUSED);
 			return;
 		}
 		this.root.findChild('dummy').delay(18, (_, __, stage) => {
-			console.log(`finalizing zap ${this.zapIdx - 1}`);
 			stage.loadZap(stage.zapIdx);
 		});
 		this.root.findChild('dummy').delay(20, (_, __, stage) => {
@@ -206,9 +258,7 @@ export class AchillesStage extends Stage {
 	}
 
 	loadZap(idx) {
-		console.log(`setting zap to ${idx}`);
 		this.zapIdx = idx;
-		console.log(this.zaps);
 		this.root.findDescendant('step-counter').text = `Step: ${idx + 1} / ${this.zaps.length} | Section: ${this.zaps[idx]?.section}`;
 	}
 
@@ -233,6 +283,7 @@ export function Achilles ({ stageClass }) {
 		if (!canvasRef.current) return;
 		const canvas = canvasRef.current;
 		const stage = new stageClass(canvas);
+		window.debug = stage.root.logHierarchy.bind(stage.root);
 
 		return () => {
 			stage.stop();

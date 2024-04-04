@@ -1,4 +1,6 @@
-const clone = structuredClone;
+import rfdc from "rfdc";
+
+const clone = typeof structuredClone === "undefined" ? rfdc() : structuredClone;
 if (typeof process === "undefined") {
 	var process = {
 		stdout: {
@@ -274,6 +276,11 @@ export default class Zeno {
 		// 	throw new Error("Cannot set variable to undefined");
 		// }
 		for (const scope of this.accessibleScopes()) {
+			if (scope.has(`^${name}`)) {
+				const { reference } = scope.get(`^${name}`);
+				this.stack[reference].set(name, value);
+				return;
+			}
 			if (scope.has(name)) {
 				scope.set(name, value);
 				return;

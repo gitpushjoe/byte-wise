@@ -8,18 +8,19 @@ export const CLICK_TIME = Symbol('achilleshelper:click_time');
 
 export const DRAG_EVENT_LISTENERS = {
 	click: (bringToFront = true) => {return  (sprite, pos) => {
+		if (sprite.channels[0].animations.length !== 0) {
+			return;
+		}
 		sprite.details ??= {};
 		sprite.details[SPRITE_POSITION] = sprite.center;
 		sprite.details[CLICK_POSITION] = pos;
 		sprite.details[CLICK_TIME] = sprite.currentFrame;
 		bringToFront && sprite.bringToFront();
 	};},
-	drag: (sprite, pos) => {
-		sprite.details[DRAGGED_POSITION] = pos;
-	},
-	hold: (sprite) => {
-		const pos = sprite.details[DRAGGED_POSITION];
-		if (!pos) return;
+	hold: (sprite, pos) => {
+		if (sprite.channels[0].animations.length !== 0) {
+			return;
+		}
 		const clickPos = sprite.details[CLICK_POSITION];
 		const spritePos = sprite.details[SPRITE_POSITION];
 		const dx = pos.x - clickPos.x;
@@ -66,11 +67,11 @@ export const RAMP_CALLBACK_LISTENERS = {
 		sprite.details[RAMP_DELAY] = delay;
 		sprite.details[RAMP_RATIO] = ratio;
 	},
-	hold: (callback) => (sprite) => {
+	hold: (callback) => (sprite, position, event, stage) => {
 		const time = sprite.currentFrame;
 		const clickTime = sprite.details[CLICK_TIME];
 		if (time == clickTime + 1 || time >= clickTime + sprite.details[RAMP_DELAY]) {
-			callback(sprite);
+			callback(sprite, position, event, stage);
 			sprite.details[CLICK_TIME] = sprite.currentFrame - 1;
 			sprite.details[RAMP_DELAY] *= sprite.details[RAMP_RATIO];
 		}
@@ -83,7 +84,6 @@ export const RAMP_CALLBACK_LISTENERS = {
 export function makeDraggable(sprite, returnSpriteOnRelease = true, bringToFront = true) {
 
 	sprite.on('click', DRAG_EVENT_LISTENERS.click(bringToFront));
-	sprite.on('drag', DRAG_EVENT_LISTENERS.drag);
 	sprite.on('hold', DRAG_EVENT_LISTENERS.hold);
 	returnSpriteOnRelease && sprite.on('release', DRAG_EVENT_LISTENERS.release);
 }

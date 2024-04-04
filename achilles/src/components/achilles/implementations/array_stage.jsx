@@ -6,14 +6,14 @@ import Palette from '../palette';
 export default class ArrayStage extends AchillesStage {
 
 	static get DEFAULT_INPUT() {
-		return [ 6, 5, 2, 10, 8, 7, 3, 9, 1, 4 ];
+		return [ 6, 2, 10, 5, 9, 4, 3, 8, 7, 1 ];
 	}
 
 	constructor(canvas) {
 		super(canvas, ArrayStage.DEFAULT_INPUT);
 	}
 
-	initialize(input) {
+	initialize() {
 		this.playground.removeAllChildren();
 		this.playground.addChildren(
 			new NullSprite({ name: '!arr' })
@@ -24,7 +24,7 @@ export default class ArrayStage extends AchillesStage {
 		);
 		addArrayItems({
 			root: this.arr,
-			items: input,
+			items: this.input,
 			modifiable: true,
 		});
 	}
@@ -33,12 +33,14 @@ export default class ArrayStage extends AchillesStage {
 		return this.playground.children[0];
 	}
 
-	addPointer(varName, zap, color = Palette.POINTER_DEFAULT) {
+	addPointer(varName, zap, color = Palette.POINTER_DEFAULT, isFlipped = false, prefix = undefined) {
 		return addArrayPointer({
 			root: this.arr.findChild("!arr-pointers"),
 			idx: zap.find(varName),
 			color: color,
 			text: varName,
+			isFlipped,
+			prefix
 		});
 	}
 

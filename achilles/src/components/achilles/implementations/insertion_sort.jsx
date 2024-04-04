@@ -1,5 +1,5 @@
-import { ArrayItem, addArrayKey, addArrayPointer } from './array_helpers';
-import Zeno from '../zeno';
+import { ArrayItem, addArrayKey } from './array_helpers';
+import Zeno from '../../zeno/zeno.js';
 import { Colors } from 'sharc-js/Utils';
 import Palette from '../palette';
 import Constants from '../constants';
@@ -18,6 +18,7 @@ export default class InsertionSort extends ArrayStage {
 	static get code() { // just for reference
 		return `
 function insertionSort(arr) { // 2
+
 	n = arr.length; // 3
 	for (let i = 1; i < n; i++) { // 4
 		let j = i - 1; // 5
@@ -30,16 +31,13 @@ function insertionSort(arr) { // 2
 	}
 } 
 
-let arr = [ 4, 3, 9, 8, 6, 1, 7, 5, 2 ]; // 0
+const arr = [ 4, 3, 9, 8, 6, 1, 7, 5, 2 ]; // 0
 insertionSort(arr); // 1
 console.log(arr); // 11
 		`;
 	}
 
 	execute() {
-
-		// this.root.findDescendant("arritem/other/additem-hitbox").removeSelf();
-
 		const zeno = new Zeno();
 		const $ = zeno.proxy;
 		const insertionSort = $("insertionSort", 2, ["^arr"], () => {
@@ -69,6 +67,9 @@ console.log(arr); // 11
 		}).map(item => {
 			return item.details.value;
 		});
+
+		this.input = [...$.arr];
+
 		$(0);
 		insertionSort(1, $.arr);
 		$.log($.arr);
@@ -218,6 +219,7 @@ console.log(arr); // 11
 	}
 
 	loadZap(idx) {
+		super.loadZap(idx);
 		const zap = this.zaps[idx];
 		this.setArray(zap.find("arr"));
 		if (zap.safeFind("i") !== undefined) {
@@ -259,7 +261,6 @@ console.log(arr); // 11
 				c.color = Colors.White;
 			}
 		});
-		super.loadZap(idx);
 	}
 
 }
