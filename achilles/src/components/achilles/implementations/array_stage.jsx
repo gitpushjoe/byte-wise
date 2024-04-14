@@ -33,10 +33,10 @@ export default class ArrayStage extends AchillesStage {
 		return this.playground.children[0];
 	}
 
-	addPointer(varName, zap, color = Palette.POINTER_DEFAULT, isFlipped = false, prefix = undefined) {
+	addPointer(varName, zap, color = Palette.POINTER_DEFAULT, isFlipped = false, prefix = undefined, offset = 0) {
 		return addArrayPointer({
 			root: this.arr.findChild("!arr-pointers"),
-			idx: zap.find(varName),
+			idx: zap.find(varName) + offset,
 			color: color,
 			text: varName,
 			isFlipped,

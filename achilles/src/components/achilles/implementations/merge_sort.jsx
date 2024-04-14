@@ -1,6 +1,6 @@
 import { ArrayItem, addArrayKey } from './array_helpers';
 import Zeno from '../../zeno/zeno.js';
-import { Colors } from 'sharc-js/Utils';
+import { Colors, Easing } from 'sharc-js/Utils';
 import Palette from '../palette';
 import Constants from '../constants';
 import ArrayStage from './array_stage';
@@ -16,56 +16,54 @@ export default class MergeSort extends ArrayStage {
 	}
 
 	static get code() { // just for reference
-		return `
-function merge(start, mid, end, arr) { // 10
+`function merge(arr, start, mid, end) { // 11
 	
-	const leftArr = arr.slice(start, mid + 1); // 11
-	const rightArr = arr.slice(mid + 1, end + 1); // 12
+	const leftArr = arr.slice(start, mid + 1); // 12
+	const rightArr = arr.slice(mid + 1, end + 1); // 13
 
 	let left = 0; 
 	let right = 0; 
-	let out = start; // 13
+	let out = start; // 14
 
-	while (left < leftArr.length && right < rightArr.length) { // 14
-		if (leftArr[left] <= rightArr[right]) { // 15
-			arr[out] = leftArr[left]; // 16
-			left++; // 17
-		} else {
-			arr[out] = rightArr[right]; // 18
-			right++; // 19
+	while (left < leftArr.length && right < rightArr.length) { // 15
+		if (leftArr[left] <= rightArr[right]) { // 16
+			arr[out] = leftArr[left]; // 17
+			left++; // 18
+		} else { // 19
+			arr[out] = rightArr[right]; // 20
+			right++; // 21
 		}
-		out++;
+		out++; // 22
 	}
 
-	while (left < leftArr.length) {
-		arr[out] = leftArr[left];
-		left++;
-		out++;
+	while (left < leftArr.length) { // 23
+		arr[out] = leftArr[left]; // 24
+		left++; // 25
+		out++; // 26
 	}
 
 }
 
-function sort(start, end, arr) { // 4
+function sort(arr, start, end) { // 4
 
-	if (start >= end) {
-		return; // 5
+	if (start >= end) { // 5
+		return; // 6
 	}
 
-	const mid = Math.floor((start + end) / 2); // 6
+	const mid = Math.floor((start + end) / 2); // 7
 
-	sort(start, mid, arr); // 7
-	sort(mid + 1, end, arr); // 8
-	merge(start, mid, end, arr); // 9
+	sort(arr, start, mid); // 8
+	sort(arr, mid + 1, end); // 9
+	merge(arr, start, mid, end); // 10
 }
 
 function mergeSort(arr) { // 2
-	sort(0, arr.length - 1, arr); // 3
+	sort(arr, 0, arr.length - 1); // 3
 }
 
 const arr = [ 4, 3, 9, 8, 6, 1, 7, 5, 2 ]; // 0
 mergeSort(arr); // 1
-console.log(arr);
-		`;
+console.log(arr); // 27`;
 	}
 
 	execute() {
@@ -139,7 +137,9 @@ console.log(arr);
 		$(7);
 
 			sort(8, $.arr, $.start, $.mid, $["IGNORE: elemSources"]);
+			$(8);
 			sort(9, $.arr, $.mid + 1, $.end, $["IGNORE: elemSources"]);
+			$(9);
 			merge(10, $.arr, $.start, $.mid, $.end, $["IGNORE: elemSources"]);
 
 			return [ 999, undefined ];
@@ -161,6 +161,70 @@ console.log(arr);
 
 	interpolate() {
 		super.interpolate();
+		const zap = this.zaps[this.zapIdx];
+		const root = this.arr;
+		this.updateElementPositionsAndAlpha(zap, root, true);
+		const incrementMap = {
+			18: "left",
+			21: "right",
+			22: "out",
+			25: "left",
+			26: "out",
+		};
+		const slide = {
+			property: 'centerX',
+			from: null,
+			duration: 20,
+			to: (x) => x + Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
+		};
+		const slideUp = {
+			property: 'centerY',
+			from: null,
+			duration: 20,
+			to: (y) => y + Constants.ARR_ITEM_SIZE / 2
+		};
+		const slideDown = {
+			...slideUp,
+			to: (y) => y - Constants.ARR_ITEM_SIZE / 2
+		};
+		const slidingPointerName = incrementMap[zap.section];
+		if (slidingPointerName) {
+			const pointer = this.arr.findDescendant(`arrpointer/${slidingPointerName}`);
+			pointer.channels[0].push(slide);
+			if (slidingPointerName === "left" && zap.find("left") >= zap.find("leftArr").length) {
+				pointer.createChannels(1).channels[1].push(slideUp);
+			}
+			if (slidingPointerName === "right" && zap.find("right") >= zap.find("rightArr").length) {
+				pointer.createChannels(1).channels[1].push(slideUp);
+			}
+			if (slidingPointerName === "out" && zap.find("out") > zap.find("end")) {
+				pointer.createChannels(1).channels[1].push(slideDown);
+			}
+		}
+		if (zap.section == 17 || zap.section == 24 || zap.section == 20) {
+			const leftOrRightArr = zap.section == 20 ? "right" : "left";
+			const item = this.arr.findDescendant(`arritem/${leftOrRightArr}Arr/${zap.find(leftOrRightArr)}`).copy();
+			// const item = this.arr.findDescendant(`arritem/leftArr/${zap.section == 20 ? zap.find("right") : zap.find("left")}`).copy();
+			this.arr.addChild(item);
+			const destCenter = this.arr.findDescendant(`arritem/${zap.find("out")}`).center;
+			item.createChannels(2).distribute([[{
+				property: 'center',
+				duration: 20,
+				from: null,
+				to: destCenter,
+			}], [{
+					property: 'color',
+					duration: 20,
+					from: null,
+					to: Colors.White,
+					easing: Easing.EASE_IN,
+			}], [{
+					property: 'strokeColor',
+					duration: 20,
+					from: null,
+					to: Colors.Green,
+			}]]);
+		}
 	}
 
 	updateElementPositionsAndAlpha(zap, root, doInterpolate = false) {
@@ -183,30 +247,65 @@ console.log(arr);
 				continue;
 			}
 			const i = parseInt(idx);
+			let centerY = Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN - heights[i] * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN);
+			if (7 <= zap.section && zap.section <= 8) {
+				if (i >= zap.find("start") && i <= zap.find("mid")) {
+					centerY -= Constants.ARR_ITEM_SIZE / 2;
+				}
+			} else if (zap.section === 9 && i >= zap.find("mid") + 1 && i <= zap.find("end")) {
+				centerY -= Constants.ARR_ITEM_SIZE / 2;
+			}
+			const color = (() => {
+				const gray = { red: 25, green: 25, blue: 25, alpha: 1 };
+				if (zap.safeFind("out") !== undefined) {
+					if (zap.safeFind("out") > zap.safeFind("end")) {
+						return i >= zap.safeFind("start") && i <= zap.safeFind("end") ? Colors.White : gray;
+					} else {
+						return ["l", "r"].includes(zap.safeFind("IGNORE: elemSources")?.[i]) ? Colors.White : gray;
+					}
+				} else {
+					return heights[i] === maxHeight ? Colors.White : gray;
+				}
+			})();
 			if (doInterpolate) {
 				sprite.channels[0].push({
 					duration: 20,
 					property: 'centerY',
 					from: null,
-					to: Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN - heights[i] * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
+					to: centerY,
+					easing: Easing.EASE_OUT,
 				});
-				sprite.channels[0].push({
-					duration: 20,
-					property: 'alpha',
-					from: null,
-					to: heights[i] === maxHeight ? 1 : 0.5,
-				});
+				if (zap.section !== 17 && zap.section !== 20 && zap.section !== 24 && zap.section !== 999) {
+					sprite.createChannels(1).channels[1].push({
+						duration: 20,
+						property: 'color',
+						from: null,
+						to: color,
+						easing: Easing.EASE_IN,
+					});
+				}
+				if (sprite.channels.length < 2) {
+					sprite.createChannels(2);
+				}
 			} else {
-				sprite.centerY = Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN - heights[i] * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN);
-				// sprite.alpha = zap.safeFind("out") !== undefined ? (i == zap.safeFind("out") && zap.safeFind("out") <= zap.safeFind("end") ? 1 : 0.5) : (heights[i] === maxHeight) ? 1 : 0.5;
-				if (zap.safeFind("out") !== undefined) {
-					if (zap.safeFind("out") > zap.safeFind("end")) {
-						sprite.color = i >= zap.safeFind("start") && i <= zap.safeFind("end") ? Colors.White : Colors.DarkGray;
-					} else {
-						sprite.color = ["l", "r"].includes(zap.safeFind("IGNORE: elemSources")?.[i]) ? Colors.White : Colors.DarkGray;
-					}
-				} else {
-					sprite.color = heights[i] === maxHeight ? Colors.White : Colors.DarkGray;
+				sprite.centerY = centerY;
+				sprite.color = color;
+			}
+		}
+		if (doInterpolate && zap.section >= 15) {
+			for (const child of this.arr.children) {
+				let idx;
+				if (idx = /arritem\/(\w+)Arr\/(\d+)$/.exec(child.name)) {
+					const [_, leftOrRight, i] = idx;
+					const alpha = zap.safeFind(leftOrRight) === parseInt(i) ? 1 : 0.25;
+					child.channels[0].push({
+						duration: 10,
+						delay: 5,
+						property: 'alpha',
+						from: null,
+						to: alpha,
+						easing: Easing.EASE_IN,
+					});
 				}
 			}
 		}
@@ -240,9 +339,9 @@ console.log(arr);
 		this.setArray(arr);
 		this.updateElementPositionsAndAlpha(zap, this.arr);
 		this.updateElementColors(zap, this.arr);
-		if (zap.safeFind('mid') !== undefined && zap.safeFind('out') === undefined) {
-			this.addPointer("mid", zap);
-		}
+		// if (zap.safeFind('mid') !== undefined && zap.safeFind('out') === undefined) {
+		// 	this.addPointer("mid", zap);
+		// }
 		if (zap.safeFind('out') !== undefined) {
 			const outPtr = this.addPointer("out", zap);
 			if (zap.safeFind("out") > zap.safeFind("end")) {
@@ -263,8 +362,16 @@ console.log(arr);
 					cpy.children[0].scaleY = -1;
 					const newIdx = idx - zap.safeFind("start");
 					cpy.children[0].text = zap.safeFind("leftArr")[newIdx];
-					cpy.alpha = zap.safeFind("left") !== undefined ? newIdx === zap.safeFind("left") ? 1 : 0.5 : 1;
+					cpy.alpha = zap.safeFind("left") !== undefined ? newIdx === zap.safeFind("left") ? 1 : 0.25 : 1;
 					this.arr.addChild(cpy);
+				}
+				if (zap.safeFind("left") !== undefined && !this.arr.findDescendant("arrpointer/left")) {
+					const ptr = this.addPointer("left", zap, Palette.ELEMENT_LEFT, true, undefined, zap.safeFind("start"));
+					const overflowed = zap.safeFind("left") >= zap.safeFind("leftArr").length;
+					ptr.center = {
+						x: ptr.centerX - (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN) / 2,
+						y: ptr.centerY - Constants.ARR_ITEM_SIZE * (1 - overflowed * .5) - Constants.ARR_ITEM_MARGIN
+					};
 				}
 			}
 		}
@@ -281,8 +388,16 @@ console.log(arr);
 					cpy.children[0].scaleY = -1;
 					const newIdx = idx - zap.safeFind("mid") - 1;
 					cpy.children[0].text = zap.safeFind("rightArr")[newIdx];
-					cpy.alpha = zap.safeFind("right") !== undefined ? newIdx === zap.safeFind("right") ? 1 : 0.5 : 1;
+					cpy.alpha = zap.safeFind("right") !== undefined ? newIdx === zap.safeFind("right") ? 1 : 0.25 : 1;
 					this.arr.addChild(cpy);
+				}
+				if (zap.safeFind("right") !== undefined && !this.arr.findDescendant("arrpointer/right")) {
+					const overflowed = zap.safeFind("right") >= zap.safeFind("rightArr").length;
+					const ptr = this.addPointer("right", zap, Palette.ELEMENT_RIGHT, true, undefined, zap.safeFind("mid") + 1 - overflowed);
+					ptr.center = {
+						x: ptr.centerX + (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN) * (0.5 + overflowed),
+						y: ptr.centerY - Constants.ARR_ITEM_SIZE * (1 - overflowed * .5) - Constants.ARR_ITEM_MARGIN
+					};
 				}
 			}
 		}

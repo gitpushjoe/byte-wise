@@ -109,7 +109,6 @@ export function addArrayPointer({ root, idx, color = Palette.POINTER_DEFAULT, te
 	prefix ??= 'arritem/';
 	const yOffset = root.parent.findDescendant(`${prefix}${idx}`)?.centerY ?? 0;
 	const xOffset = root.parent.findDescendant(`${prefix}${idx}`)?.centerX ?? 0;
-	console.log(prefix, yOffset);
 	const pointer = new Line({
 		name: `arrpointer/${text}`,
 		bounds: Corners(
@@ -123,7 +122,6 @@ export function addArrayPointer({ root, idx, color = Palette.POINTER_DEFAULT, te
 		lineWidth: Constants.POINTER_ARROW_WIDTH,
 		lineCap: 'round',
 		arrow: {
-			side: 'start',
 			lineCap: 'round',
 			length: Constants.POINTER_ARROW_LENGTH,
 			stroke: {
@@ -134,6 +132,7 @@ export function addArrayPointer({ root, idx, color = Palette.POINTER_DEFAULT, te
 			},
 		},
 	});
+	pointer.arrowSide = isFlipped ? 'start' : 'end';
 	if (text) {
 		pointer.addChild(new TextSprite({
 			name: `arrpointertext/${idx}`,

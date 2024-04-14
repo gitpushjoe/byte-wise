@@ -56,6 +56,7 @@ export class AchillesStage extends Stage {
 
 	constructor(canvas, initialInput) {
 		super(canvas, 'centered', Palette.BG);
+		this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
 		this.input = initialInput;
 		this.root.addChildren(
 			new NullSprite({ name: 'playground-root' })
