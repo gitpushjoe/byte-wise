@@ -60,7 +60,15 @@ console.log(arr); // 11
 			return [ 999, undefined ];
 		});
 
-		$.arr = this.getArray();
+		$.arr = this.playground.children[0].findChildrenWhere(sprite => {
+			return sprite.name.startsWith("arritem/") && !sprite.name.startsWith("arritem/other");
+		}).sort((a, b) => {
+			return parseInt(a.name.split("/")[1]) - parseInt(b.name.split("/")[1]);
+		}).map(item => {
+			return item.details.value;
+		});
+
+		this.input = [...$.arr];
 
 		$(0);
 		insertionSort(1, $.arr);
@@ -72,37 +80,56 @@ console.log(arr); // 11
 
 	interpolate() {
 		super.interpolate();
-		const zap = this.zaps[this.zapIdx];
-		const section = zap.section;
-		if (section === 9) {
-			const j = this.findArrayPointer("j");
+		if (this.zaps[this.zapIdx].section === 9) {
+			const j = this.playground.findDescendant('arrpointer/j');
 			const key = this.playground.findDescendant('!arr-key').children[0];
-			this.slideHorizontal(j, undefined, true);
-			this.slideHorizontal(key, undefined, true);
+			const idx = this.zaps[this.zapIdx].find("j");
+			const anim = {
+				duration: 20,
+				property: 'centerX',
+				from: null,
+				to: idx * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
+			};
+			j.channels[0].push(anim);
+			key.channels[0].push(anim);
 
-		} else if (section === 4) {
-			const i = this.findArrayPointer("i");
-			const j = this.findArrayPointer("j");
-			if (i) {
-				this.slideHorizontal(i);
-			}
-			if (!j) {
+		} else if (this.zaps[this.zapIdx].section === 4) {
+			const i = this.playground.findDescendant('arrpointer/i');
+			const j = this.playground.findDescendant('arrpointer/j');
+			if (!i) {
 				return;
 			}
-			this.floatOut(j);
+			const idx = this.zaps[this.zapIdx].find("i");
+			i.channels[0].push({
+				duration: 15,
+				property: 'centerX',
+				from: null,
+				to: idx * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
+			});
+			j.createChannels(1);
+			j.distribute([[{
+				duration: 15,
+				property: 'alpha',
+				from: null,
+				to: 0,
+			}], [{
+				duration: 15,
+				property: 'centerY',
+				from: null,
+				to: y => y + 10,
+			}]]);
 			j.children[0].channels[0].push({
-				duration: this.stretchTime(15),
+				duration: 15,
 				property: 'alpha',
 				from: null,
 				to: 0,
 			});
 
-		} else if (section === 10) {
-			const keyParent = this.playground.findDescendant('!arr-key');
-			keyParent.bringToFront();
-			const key = keyParent.children[0];
+		} else if (this.zaps[this.zapIdx].section === 10) {
+			const key = this.playground.findDescendant('!arr-key').children[0];
+			this.playground.findDescendant('!arr-key').bringToFront();
 			key.channels[0].push({
-				duration: this.stretchTime(15),
+				duration: 15,
 				property: 'center',
 				from: null,
 				to: (center) => { return {
@@ -111,22 +138,22 @@ console.log(arr); // 11
 				}; },
 			});
 
-		} else if (section === 7) {
-			const jIdx = zap.find("j");
-			const item = this.findArrayItem(jIdx);
+		} else if (this.zaps[this.zapIdx].section === 7) {
+			const jIdx = this.zaps[this.zapIdx].find("j");
+			const item = this.playground.findDescendant(`arritem/${jIdx}`);
 			const key = this.playground.findDescendant('!arr-key').children[0];
 			const shake = [{
-				duration: this.stretchTime(3),
+				duration: 3,
 				property: 'rotation',
 				from: null,
 				to: -20,
 			}, {
-				duration: this.stretchTime(6),
+				duration: 6,
 				property: 'rotation',
 				from: null,
 				to: 20,
 			}, {
-				duration: this.stretchTime(3),
+				duration: 3,
 				property: 'rotation',
 				from: null,
 				to: 0,
@@ -135,18 +162,37 @@ console.log(arr); // 11
 			item.channels[0].push(shake);
 			key.channels[0].push(oppositeShake);
 
-		} else if (section === 8) {
+		} else if (this.zaps[this.zapIdx].section === 8) {
 			const tempItem = ArrayItem({
-				value: zap.find("arr")[zap.find("j")],
-				idx: zap.find("j"),
+				value: this.zaps[this.zapIdx].find("arr")[this.zaps[this.zapIdx].find("j")],
+				idx: this.zaps[this.zapIdx].find("j"),
 			});
 			tempItem.color = Colors.Green;
-			this.arr.addChild(tempItem);
-			this.slideHorizontal(tempItem);
-		} else if (section === 5) {
+			this.playground.children[0].addChild(tempItem);
+			tempItem.channels[0].push({
+				duration: 15,
+				property: 'centerX',
+				from: null,
+				to: x => x + Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
+			});
+
+		} else if (this.zaps[this.zapIdx].section === 5) {
+			const fadeIn = {
+				duration: 20,
+				property: 'alpha',
+				from: 0,
+				to: 1,
+			};
+			const dropIn = {
+				duration: 20,
+				property: 'centerY',
+				from: null,
+				to: y => y + 10,
+				easing: (t) => 1 - t,
+			};
 			const pointer = this.addPointer("j", this.zaps[this.zapIdx], Palette.POINTER_HIGHLIGHT);
-			this.floatIn(pointer);
-			// pointer.children[0].channels[0].push(fadeIn);
+			pointer.createChannels(1).distribute([[fadeIn], [dropIn]]);
+			pointer.children[0].channels[0].push(fadeIn);
 		
 		} else if (this.zaps[this.zapIdx].section === 6) {
 			const arrKey = addArrayKey({
@@ -169,6 +215,7 @@ console.log(arr); // 11
 			}]);
 			this.arr.findChild("!arr-key").bringToFront();
 		}
+		
 	}
 
 	loadZap(idx) {

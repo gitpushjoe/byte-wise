@@ -39,6 +39,8 @@ export class AchillesStage extends Stage {
 	zapIdx = 0;
 	input = this.constructor.DEFAULT_INPUT;
 
+	interpolate_quantum = 20;
+
 	static get uiButtonStartListener() {
 		return (sprite, _, __, stage) => {
 			if (!stage.validate()) {
@@ -115,6 +117,17 @@ export class AchillesStage extends Stage {
 	initialize() { abstract(); }
 
 	validate() { abstract(); }
+
+	stretchTime(time) {
+		return time * this.interpolate_quantum / 20;
+	}
+
+	stretchAnim(anim) {
+		return {
+			...anim,
+			duration: this.stretchTime(anim.duration),
+		};
+	}
 
 	prepareUI() { 
 		this.ui.addChildren(

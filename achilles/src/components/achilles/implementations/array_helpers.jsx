@@ -108,7 +108,8 @@ export function ModifiableArrayItem({ value, idx }) {
 export function addArrayPointer({ root, idx, color = Palette.POINTER_DEFAULT, text = '', isFlipped = false, prefix = undefined }) {
 	prefix ??= 'arritem/';
 	const yOffset = root.parent.findDescendant(`${prefix}${idx}`)?.centerY ?? 0;
-	const xOffset = root.parent.findDescendant(`${prefix}${idx}`)?.centerX ?? 0;
+	let xOffset = root.parent.findDescendant(`${prefix}${idx}`)?.centerX ?? 0;
+	xOffset -= idx >= 0 ? 0 : (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN) * -idx;
 	const pointer = new Line({
 		name: `arrpointer/${text}`,
 		bounds: Corners(
