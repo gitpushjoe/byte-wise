@@ -8,7 +8,7 @@ function App() {
   return (
     <>
       <h1>byte-wise</h1>
-      <Achilles stageClass={InsertionSort} />
+      <Achilles stageClass={MergeSort} />
     </>
   )
 }

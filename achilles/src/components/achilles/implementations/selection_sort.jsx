@@ -1,6 +1,6 @@
 import { ArrayItem, addArrayKey } from './array_helpers';
 import Zeno from '../../zeno/zeno.js';
-import { Colors } from 'sharc-js/Utils';
+import { Colors, Easing } from 'sharc-js/Utils';
 import Palette from '../palette';
 import Constants from '../constants';
 import ArrayStage from './array_stage';
@@ -17,61 +17,58 @@ export default class InsertionSort extends ArrayStage {
 
 	static get code() { // just for reference
 		return `
-function insertionSort(arr) { // 2
+function selectionSort(arr) { // 2
 
-	n = arr.length; // 3
-	for (let i = 1; i < n; i++) { // 4
-		let j = i - 1; // 5
-		let key = arr[i]; // 6
-		while (j >= 0 && arr[j] > key) { // 7
-			arr[j + 1] = arr[j]; // 8
-			j--; // 9
+	const n = arr.length; // 3
+	for (let i = 0; i < n - 1; i++) { // 4
+		let minimum = i; // 5
+		for (let j = i + 1; j < n; j++) { // 6
+			if (arr[j] < arr[minimum]) { // 7
+				minimum = j; // 8
+			}
 		}
-		arr[j + 1] = key; // 10
+		if (minimum !== i) { // 9
+			[ arr[i], arr[minimum] ] = [ arr[minimum], arr[i] ]; // 10
+		}
 	}
 } 
 
 const arr = [ 4, 3, 9, 8, 6, 1, 7, 5, 2 ]; // 0
-insertionSort(arr); // 1
+selectionSort(arr); // 1
 console.log(arr); // 11
-		`;
+`;
 	}
 
 	execute() {
 		const zeno = new Zeno();
 		const $ = zeno.proxy;
-		const insertionSort = $("insertionSort", 2, ["^arr"], () => {
+
+		$.arr = this.getArray();
+		$(0);
+
+		const selectionSort = $("selectionSort", 2, ["^arr"], () => {
 			$.n = $.arr.length;
 			$(3);
-			$.for("i", 1, i => i < $.n, i => ++i, 4, () => {
-				$.j = $.i - 1;
+			$.for("i", 0, i => i < $.n - 1, i => ++i, 4, i => {
+				$.minimum = i;
 				$(5);
-				$.key = $.arr[$.i];
-				$(6);
-				$.while(() => $.j >= 0 && $.arr[$.j] > $.key, 7, () => {
-					$.arr[$.j + 1] = $.arr[$.j];
-					$(8);
-					$.j = $.j - 1;
-					$(9);
+				$.for("j", i + 1, j => j < $.n, j => ++j, 6, j => {
+					$.if(() => $.arr[j] < $.arr[$.minimum], 7, () => {
+						$.minimum = j;
+						$(8);
+					});
 				});
-				$.arr[$.j + 1] = $.key;
-				$(10);
+				$.if(() => $.minimum !== i, 9, () => {
+					const temp = [ $.arr[i], $.arr[$.minimum] ];
+					$.arr[i] = temp[1];
+					$.arr[$.minimum] = temp[0];
+					$(10);
+				});
 			});
 			return [ 999, undefined ];
 		});
 
-		$.arr = this.playground.children[0].findChildrenWhere(sprite => {
-			return sprite.name.startsWith("arritem/") && !sprite.name.startsWith("arritem/other");
-		}).sort((a, b) => {
-			return parseInt(a.name.split("/")[1]) - parseInt(b.name.split("/")[1]);
-		}).map(item => {
-			return item.details.value;
-		});
-
-		this.input = [...$.arr];
-
-		$(0);
-		insertionSort(1, $.arr);
+		selectionSort(1, $.arr);
 		$.log($.arr);
 		$(11);
 
@@ -80,142 +77,83 @@ console.log(arr); // 11
 
 	interpolate() {
 		super.interpolate();
-		if (this.zaps[this.zapIdx].section === 9) {
-			const j = this.playground.findDescendant('arrpointer/j');
-			const key = this.playground.findDescendant('!arr-key').children[0];
-			const idx = this.zaps[this.zapIdx].find("j");
-			const anim = {
-				duration: 20,
-				property: 'centerX',
-				from: null,
-				to: idx * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
-			};
-			j.channels[0].push(anim);
-			key.channels[0].push(anim);
-
-		} else if (this.zaps[this.zapIdx].section === 4) {
-			const i = this.playground.findDescendant('arrpointer/i');
-			const j = this.playground.findDescendant('arrpointer/j');
-			if (!i) {
-				return;
+		const zap = this.zaps[this.zapIdx];
+		const section = zap.section;
+		switch (section) {
+			case 4: {
+				const i = zap.safeFind("i");
+				if (i === 0) {
+					this.floatIn(this.addPointer("i", zap));
+				} else {
+					this.slideHorizontal(this.findArrayPointer("i"));
+				}
+				if (this.arr.findDescendant("arrpointer/minimum")) {
+					this.floatOut(this.findArrayPointer("minimum"), undefined, true);
+				}
+				if (this.arr.findDescendant("arrpointer/j")) {
+					this.floatOut(this.findArrayPointer("j"));
+				}
+				break;
 			}
-			const idx = this.zaps[this.zapIdx].find("i");
-			i.channels[0].push({
-				duration: 15,
-				property: 'centerX',
-				from: null,
-				to: idx * (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
-			});
-			j.createChannels(1);
-			j.distribute([[{
-				duration: 15,
-				property: 'alpha',
-				from: null,
-				to: 0,
-			}], [{
-				duration: 15,
-				property: 'centerY',
-				from: null,
-				to: y => y + 10,
-			}]]);
-			j.children[0].channels[0].push({
-				duration: 15,
-				property: 'alpha',
-				from: null,
-				to: 0,
-			});
-
-		} else if (this.zaps[this.zapIdx].section === 10) {
-			const key = this.playground.findDescendant('!arr-key').children[0];
-			this.playground.findDescendant('!arr-key').bringToFront();
-			key.channels[0].push({
-				duration: 15,
-				property: 'center',
-				from: null,
-				to: (center) => { return {
-					x: center.x + Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
-					y: 0
-				}; },
-			});
-
-		} else if (this.zaps[this.zapIdx].section === 7) {
-			const jIdx = this.zaps[this.zapIdx].find("j");
-			const item = this.playground.findDescendant(`arritem/${jIdx}`);
-			const key = this.playground.findDescendant('!arr-key').children[0];
-			const shake = [{
-				duration: 3,
-				property: 'rotation',
-				from: null,
-				to: -20,
-			}, {
-				duration: 6,
-				property: 'rotation',
-				from: null,
-				to: 20,
-			}, {
-				duration: 3,
-				property: 'rotation',
-				from: null,
-				to: 0,
-			}];
-			const oppositeShake = shake.map(anim => { return { ...anim, to: -anim.to }; });
-			item.channels[0].push(shake);
-			key.channels[0].push(oppositeShake);
-
-		} else if (this.zaps[this.zapIdx].section === 8) {
-			const tempItem = ArrayItem({
-				value: this.zaps[this.zapIdx].find("arr")[this.zaps[this.zapIdx].find("j")],
-				idx: this.zaps[this.zapIdx].find("j"),
-			});
-			tempItem.color = Colors.Green;
-			this.playground.children[0].addChild(tempItem);
-			tempItem.channels[0].push({
-				duration: 15,
-				property: 'centerX',
-				from: null,
-				to: x => x + Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
-			});
-
-		} else if (this.zaps[this.zapIdx].section === 5) {
-			const fadeIn = {
-				duration: 20,
-				property: 'alpha',
-				from: 0,
-				to: 1,
-			};
-			const dropIn = {
-				duration: 20,
-				property: 'centerY',
-				from: null,
-				to: y => y + 10,
-				easing: (t) => 1 - t,
-			};
-			const pointer = this.addPointer("j", this.zaps[this.zapIdx], Palette.POINTER_HIGHLIGHT);
-			pointer.createChannels(1).distribute([[fadeIn], [dropIn]]);
-			pointer.children[0].channels[0].push(fadeIn);
-		
-		} else if (this.zaps[this.zapIdx].section === 6) {
-			const arrKey = addArrayKey({
-				root: this.playground.children[0].findChild("!arr-key"),
-				idx: this.zaps[this.zapIdx].find("i"),
-				value: this.zaps[this.zapIdx].find("key"),
-				color: Palette.KEY_HIGHLIGHT,
-				text: 'key',
-			});
-			arrKey.createChannels(1).distribute([{
-				duration: 20,
-				property: 'centerX',
-				from: null,
-				to: x => x - Constants.ARR_ITEM_SIZE - Constants.ARR_ITEM_MARGIN,
-			}, {
-				duration: 20,
-				property: 'centerY',
-				from: null,
-				to: -(Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
-			}]);
-			this.arr.findChild("!arr-key").bringToFront();
+			case 5: {
+				const ptr = this.addPointer("minimum", zap, Palette.KEY_DEFAULT, true);
+				ptr.centerY += 0;
+				ptr.children[0].positionY -= 10;
+				this.floatIn(ptr, undefined, true);
+				break;
+			}
+			case 6: {
+				const j = zap.safeFind("j");
+				if (j === zap.safeFind("i") + 1) {
+					this.floatIn(this.addPointer("j", zap, Palette.POINTER_HIGHLIGHT));
+				} else {
+					this.slideHorizontal(this.findArrayPointer("j"));
+				}
+				break;
+			}
+			case 8: {
+				for (const child of this.playground.children[0].children) {
+					if (!child.name.startsWith("arritem/")) {
+						continue;
+					}
+					if (child.strokeColor.red !== 0) {
+						child.channels[0].push({
+							duration: this.stretchTime(10),
+							property: "strokeColor",
+							from: null,
+							to: Colors.Black,
+						});
+						child.createChannels(1).channels[1].push({
+							duration: this.stretchTime(10),
+							property: "color",
+							from: null,
+							to: Palette.ELEMENT_DEFAULT,
+						});
+					} else if (parseInt(child.name.split("/")[1]) === zap.safeFind("minimum")) {
+						child.channels[0].push({
+							duration: this.stretchTime(10),
+							property: "strokeColor",
+							from: null,
+							to: Palette.KEY_STROKE,
+						});
+						child.createChannels(1).channels[1].push({
+							duration: this.stretchTime(10),
+							property: "color",
+							from: null,
+							to: Palette.KEY_DEFAULT,
+						});
+					}
+				}
+				this.slideHorizontal(this.findArrayPointer("minimum"), undefined, undefined, zap.safeFind("j"));
+				break;
+			}
+			case 10: { 
+				const item1 = this.findArrayItem(zap.safeFind("i"));
+				const item2 = this.findArrayItem(zap.safeFind("minimum"));
+				this.swapItems(item1, item2);
+				break;
+			}
 		}
-		
 	}
 
 	loadZap(idx) {
@@ -228,37 +166,27 @@ console.log(arr); // 11
 		if (zap.safeFind("j") !== undefined) {
 			this.addPointer("j", zap, Palette.POINTER_HIGHLIGHT);
 		}
-		if (zap.safeFind("key") !== undefined && zap.section !== 10) {
-			addArrayKey({
-				root: this.playground.children[0].findChild("!arr-key"),
-				idx: zap.find("j"),
-				value: zap.find("key"),
-				color: Palette.KEY_HIGHLIGHT,
-				yOffset: Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN,
-				text: 'key',
-			});
+		if (zap.safeFind("minimum") !== undefined) {
+			const ptr = this.addPointer("minimum", zap, Palette.KEY_DEFAULT, true);
+			ptr.centerY += 0; // works around a bug in sharc
+			ptr.children[0].positionY -= 10;
 		}
 		this.playground.children[0].children.forEach((c) => {
-			const i = parseInt(c.name.split("/")[1]);
 			if (!c.name.startsWith("arritem/")) {
 				return;
 			}
-			if (zap.section === 10 && i === zap.safeFind("j") + 1) {
+			const i = parseInt(c.name.split("/")[1]);
+			if (zap.section > 10) {
+				c.color = Colors.Green;
+			} else if (i == zap.safeFind("minimum") && zap.section <= 8) {
 				c.color = Palette.KEY_DEFAULT;
 				c.strokeColor = Palette.KEY_STROKE;
+			}
+			if (!zap.safeFind("i")) {
 				return;
 			}
-			if (([8, 9, 10].includes(zap.section) && i === zap.safeFind("j") + 1) ||
-				(i === zap.safeFind("i") && zap.safeFind("j") < zap.safeFind("i") - 1)) {
+			if (i < (zap.safeFind("i") ?? -1)) {
 				c.color = Colors.Green;
-				return;
-			}
-			if (i < (zap.safeFind("i")  ?? -1)) {
-				c.color = Colors.Green;
-			} else if (zap.safeFind("i") === undefined && this.zapIdx > 4) {
-				c.color = Colors.Green;
-			} else {
-				c.color = Colors.White;
 			}
 		});
 	}

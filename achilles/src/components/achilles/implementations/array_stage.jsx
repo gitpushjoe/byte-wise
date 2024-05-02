@@ -77,12 +77,17 @@ export default class ArrayStage extends AchillesStage {
 		return this.arr.findChild("!arr-pointers").findChild(`arrpointer/${pointerName}`);
 	}
 
-	slideHorizontal(sprite, duration = 15, backwards = false) {
+	slideHorizontal(sprite, duration = 15, backwards = false, target = undefined) {
 		const anim = this.stretchAnim({
 			duration,
 			property: 'centerX',
 			from: null,
-			to: x => x + (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN) * (backwards ? -1 : 1)
+			to: x => {
+				if (target === undefined) {
+					return x + (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN) * (backwards ? -1 : 1);
+				}
+				return (Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN) * target;
+			}
 		});
 		if (!sprite) {
 			return anim;
@@ -95,7 +100,7 @@ export default class ArrayStage extends AchillesStage {
 		}
 	}
 
-	floatOut(sprite, duration = 15) {
+	floatOut(sprite, duration = 15, reverse = false) {
 		const floatAnims = [
 			[{
 				duration: this.stretchTime(duration),
@@ -107,7 +112,7 @@ export default class ArrayStage extends AchillesStage {
 				duration: this.stretchTime(duration),
 				property: 'centerY',
 				from: null,
-				to: y => y + 10,
+				to: y => { return y + (reverse ? -10 : 10); },
 		}]];
 		if (!sprite) {
 			return floatAnims;
@@ -115,21 +120,62 @@ export default class ArrayStage extends AchillesStage {
 		if (sprite.channels.length < 2) {
 			sprite.createChannels(1);
 		}
+		if (sprite.children[0].text !== undefined) {
+			sprite.children[0].channels[0].push(floatAnims[0][0]);
+		}
 		sprite.distribute(floatAnims);
 	}
 
-	floatIn(sprite, duration = 15) {
+	floatIn(sprite, duration = 15, reverse = false) {
 		const floatAnims = this.floatOut(null, duration);
-		floatAnims[0][0].from = null;
+		floatAnims[0][0].from = 0;
 		floatAnims[0][0].to = 1;
-		floatAnims[1][0].to = y => y - 10;
+		if (reverse) {
+			floatAnims[1][0].to = y => { return y - 10; };
+		}
+		floatAnims[1][0].easing = t => { return 1 - t; };
 		if (!sprite) {
 			return floatAnims;
 		}
 		if (sprite.channels.length < 2) {
 			sprite.createChannels(1);
 		}
+		if (sprite.children[0].text !== undefined) {
+			sprite.children[0].channels[0].push(floatAnims[0][0]);
+		}
 		sprite.distribute(floatAnims);
+	}
+
+	swapItems(arrItem1, arrItem2, heightLimit = 150) {
+		const [x1, x2 ] = [arrItem1.centerX, arrItem2.centerX];
+		arrItem1.createChannels(3);
+		arrItem2.createChannels(3);
+		arrItem1.channels[2].push({
+			duration: this.stretchTime(16),
+			property: 'centerX',
+			from: x1,
+			to: x2,
+		});
+		arrItem1.channels[3].push({
+			duration: this.stretchTime(18),
+			property: 'centerY',
+			from: null,
+			to: Math.min(Math.abs(x2 - x1) / 2, heightLimit),
+			easing: Easing.Bounce(Easing.EASE_OUT),
+		});
+		arrItem2.channels[2].push({
+			duration: this.stretchTime(16),
+			property: 'centerX',
+			from: x2,
+			to: x1,
+		});
+		arrItem2.channels[3].push({
+			duration: this.stretchTime(18),
+			property: 'centerY',
+			from: null,
+			to: Math.max(-Math.abs(x2 - x1) / 2, -heightLimit),
+			easing: Easing.Bounce(Easing.EASE_OUT),
+		});
 	}
 }
 

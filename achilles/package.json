@@ -16,7 +16,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rfdc": "^1.3.1",
-    "sharc-js": "^2.1.0-dev8",
+    "sharc-js": "^2.1.0",
     "socket.io": "^4.7.5",
     "stream-browserify": "^3.0.0",
     "vite": "^5.2.3"

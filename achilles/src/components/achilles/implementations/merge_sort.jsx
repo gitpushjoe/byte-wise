@@ -15,7 +15,7 @@ export default class MergeSort extends ArrayStage {
 		return true;
 	}
 
-	static get code() { // just for reference
+	static code() { // just for reference
 `function merge(arr, start, mid, end) { // 11
 	
 	const leftArr = arr.slice(start, mid + 1); // 12

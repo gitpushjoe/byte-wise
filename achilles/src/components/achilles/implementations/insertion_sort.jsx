@@ -19,7 +19,7 @@ export default class InsertionSort extends ArrayStage {
 		return `
 function insertionSort(arr) { // 2
 
-	n = arr.length; // 3
+	let n = arr.length; // 3
 	for (let i = 1; i < n; i++) { // 4
 		let j = i - 1; // 5
 		let key = arr[i]; // 6

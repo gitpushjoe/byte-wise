@@ -70,7 +70,7 @@ export class Zap { // short for Zeno Snapshots
 	 *   (section: number)
 	 *   (name: string, section: number, argNames: string[], body: Function): Function;
 	 *   if: (condition: Function, section: number, body: Function, elseSection: number, elseBody: Function) => boolean;
-	 *   for: (name: string, init: Function, condition: Function, update: Function, section: number, body: Function) => boolean;
+	 *   for: (name: string, init: any, condition: Function, update: Function, section: number, body: Function) => boolean;
 	 *   rangedFor: (name: string, range: any[], section: number, body: Function) => boolean;
 	 *   while: (condition: Function, section: number, body: Function) => boolean;
 	 *   print: () => void;
@@ -306,7 +306,7 @@ export default class Zeno {
 
 	/** Simulates a for loop
 	* @param {string} name - The name of the loop variable
-	* @param {Function} init - The initial value of the loop variable
+	* @param {any} init - The initial value of the loop variable
 	* @param {Function} condition - The condition to check before each iteration
 	* @param {Function} update - The function to call after each iteration
 	* @param {number} section - The section the for loop belongs to

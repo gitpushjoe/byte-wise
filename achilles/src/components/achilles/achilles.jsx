@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Stage } from 'sharc-js/Stage';
 import Palette from './palette';
 import { LabelSprite, NullSprite, Rect, TextSprite } from 'sharc-js/Sprites';
-import { Colors, Position as p } from 'sharc-js/Utils';
+import { Color, Colors, Position as p } from 'sharc-js/Utils';
 import { DRAG_EVENT_LISTENERS, CLICK_POSITION, RAMP_CALLBACK_LISTENERS } from './helpers';
 
 function abstract() {
@@ -39,6 +39,7 @@ export class AchillesStage extends Stage {
 	zapIdx = 0;
 	input = this.constructor.DEFAULT_INPUT;
 
+	next_interpolate_quantum = undefined;
 	interpolate_quantum = 20;
 
 	static get uiButtonStartListener() {
@@ -84,17 +85,39 @@ export class AchillesStage extends Stage {
 							};
 							sprite.details[CLICK_POSITION] = pos;
 					}),
-					new NullSprite({ name: 'playground' }),
-					new NullSprite({ name: 'playground-ui' }),
+				new NullSprite({ name: 'playground' }),
+				new NullSprite({ name: 'playground-ui' }),
 			),
 			new NullSprite({ name: 'ui' })
 				.addChildren(
-					new LabelSprite({
+				new LabelSprite({
 						...AchillesStage.uiButtonProps,
 						name: 'main-button',
 						text: 'Start',
 						position: p(0, -285),
-						}).on('release', AchillesStage.uiButtonStartListener)
+						}).on('release', AchillesStage.uiButtonStartListener),
+				new LabelSprite({
+						fontSize: 30,		
+						name: 'settings',
+						text: 'Speed:  5x ',
+						backgroundColor: Color(70, 70, 70, 1),
+						stroke: { lineWidth: 5 },
+						backgroundRadius: 15,
+						color: Colors.White,
+						textAlign: 'right',
+						bold: true,
+						padding: 13,
+						position: p(670, 365),
+						details: {
+							speedIdx: 5,
+							speeds: [1, 1.5, 2, 2.5, 4, 5],
+						}
+					}).on('release', (sprite, _, __, stage) => {
+						const idx = ++sprite.details.speedIdx % sprite.details.speeds.length;
+						sprite.text = `Speed:  ${sprite.details.speeds[idx]}x `;
+						stage.next_interpolate_quantum = 100 / sprite.details.speeds[idx];
+					}
+				),
 			),
 			new NullSprite({ 
 				name: 'state',
@@ -173,7 +196,7 @@ export class AchillesStage extends Stage {
 					if (stage.getState() === AchillesStage.STATES.PLAYING) {
 						return;
 					}
-					stage.loadZap(0);
+				stage.loadZap(0);
 			}),
 			new LabelSprite({
 				...AchillesStage.uiButtonProps,
@@ -254,10 +277,14 @@ export class AchillesStage extends Stage {
 			this.setState(AchillesStage.STATES.PAUSED);
 			return;
 		}
-		this.root.findChild('dummy').delay(18, (_, __, stage) => {
+		this.root.findChild('dummy').delay(this.stretchTime(18), (_, __, stage) => {
 			stage.loadZap(stage.zapIdx);
 		});
-		this.root.findChild('dummy').delay(20, (_, __, stage) => {
+		this.root.findChild('dummy').delay(this.stretchTime(20), (_, __, stage) => {
+			if (stage.next_interpolate_quantum) {
+				stage.interpolate_quantum = stage.next_interpolate_quantum;
+				stage.next_interpolate_quantum = undefined;
+			}
 			stage.interpolate();
 		});
 	}
