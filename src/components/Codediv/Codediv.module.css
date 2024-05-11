@@ -1,0 +1,14 @@
+@import "../../vars.css";
+
+
+.container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300px; /* Set the width of the container */
+    height: 100vh; /* Set the height to full viewport height */
+    background-color: #f9f9f9; /* Set the background color */
+    padding: 20px; /* Add some padding */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a box shadow */
+    z-index: 100; /* Set a high z-index to ensure it's on top of other elements */
+}

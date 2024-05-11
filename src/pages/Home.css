@@ -1,0 +1,34 @@
+.tab-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+}
+
+.tab {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    background-color: #f0f0f0;
+}
+
+.tab.active {
+    background-color: #ddd;
+    border-bottom: none;
+}
+
+.content {
+    padding: 20px;
+    border: 1px solid #ccc;
+    margin-top: 20px;
+}
+
+.visualization-panel {
+    height: 300px; /* Adjust as necessary */
+    border: 1px solid #ccc;
+    margin-top: 20px;
+}

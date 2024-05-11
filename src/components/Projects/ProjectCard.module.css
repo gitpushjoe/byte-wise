@@ -1,0 +1,56 @@
+
+@import "../../vars.css";
+
+.container {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: var(--color-primary); /* Utilize a primary color for background */
+  box-shadow: 0 16px 14px 0 rgba(4, 21, 45, 0.75);
+  padding: 18px 24px;
+  max-width: 250px;
+}
+
+.image {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  width: 100%;
+  height: auto;
+  object-fit: cover; /* Ensure the image covers the allocated area */
+  margin-bottom: 26px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text); /* Ensure title is readable against the background */
+  margin-bottom: 12px; /* Added bottom margin for spacing */
+  text-align: center; 
+}
+
+.links {
+  width: 100%;
+  margin-top: 26px;
+  display: flex;
+  justify-content: center;
+}
+
+.link {
+  border: none;
+  text-decoration: none;
+  color: #000000;
+  font-size: 20px;
+  font-weight: 600;
+  background: linear-gradient(145deg, var(--color-primary), var(--color-secondary));
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.link:hover, .link:focus {
+  background: linear-gradient(145deg, var(--color-secondary), var(--color-primary));
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+}

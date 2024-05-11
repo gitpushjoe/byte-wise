@@ -1,0 +1,42 @@
+[
+  {
+    "title": "Quicksort Algorithm",
+    "imageSrc": "projects/sort.png",
+    "description": "",
+    "visualize": "http://localhost:5173/test"
+  },
+  {
+    "title": "Algorithm 1",
+    "imageSrc": "projects/algo.png",
+    "description": "",
+    "visualize": "https://www.google.com"
+  },
+  {
+    "title": "Algorithm 1",
+    "imageSrc": "projects/algo.png",
+    "description": "",
+    "visualize": "https://www.google.com"
+    }
+,
+  {
+    "title": "Algorithm 1",
+    "imageSrc": "projects/algo.png",
+    "description": "",
+    "visualize": "https://www.google.com"
+  }
+  ,
+  {
+    "title": "Algorithm 1",
+    "imageSrc": "projects/algo.png",
+    "description": "",
+    "visualize": "https://www.google.com"
+    }
+    ,
+    {
+      "title": "DFS",
+      "imageSrc": "projects/tree.png",
+      "description": "",
+      "visualize": "https://www.google.com"
+      }
+    
+]
