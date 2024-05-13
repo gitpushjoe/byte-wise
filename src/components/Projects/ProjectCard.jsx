@@ -1,22 +1,17 @@
-
-
-import React from "react";
+import { useNavigate } from "react-router-dom";
 
 import styles from "./ProjectCard.module.css";
-import { getImageUrl } from "../../utils";
 
 export const ProjectCard = ({
-  project: { title, imageSrc, visualize },
+  project: { title, imageSrc, path },
 }) => {
-  // Handler function to navigate to the visualize URL
-  const handleVisualizeClick = () => {
-    window.location.href = visualize;
-  };
+
+  const navigate = useNavigate();
 
   return (
     <div className={styles.container}>
       <img
-        src={getImageUrl(imageSrc)}
+        src={imageSrc}
         alt={`Image of ${title}`}
         className={styles.image}
       />
@@ -24,7 +19,9 @@ export const ProjectCard = ({
   
       <div className={styles.links}>
         {/* Changed from an <a> tag to a <button> element */}
-        <button onClick={handleVisualizeClick} className={styles.link}>
+        <button 
+          onClick={ () => { navigate(path) } }
+          className={styles.link}>
           Visualize
         </button>
       </div>

@@ -1,98 +1,96 @@
-import React from "react";
+import { useState } from "react";
+import { splitTextBySections } from "../zeno/utils";
+import styles from "./Codediv.module.css";
 
-export class Codediv extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            activeTab: "C++"  // Default active tab
-        };
+export function Codediv(props) {
+
+    const sourceCode = props.sourceCode ?? [
+        {
+            language: "C++",
+            code: `
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello, World!";
+    return 0;
+}`
+        },
+        {
+            language: "Python",
+            code: `
+print("Hello, World!")
+            `
+        },
+        {
+            language: "Java",
+            code: `
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
     }
+}
+`
+        },
+        {
+            language: "JavaScript",
+            code: `
+console.log("Hello, World!");`
+        }
+    ];
 
-    setActiveTab(tab) {
-        this.setState({ activeTab: tab });
-    }
+    const inputFormatter = props.inputFormatter ?? ((input) => input);
 
-    render() {
-        const { activeTab } = this.state;
-        const tabStyle = {
-            backgroundColor: '#4CAF50',  // Green background
-            color: 'white',
-            padding: '10px 20px',  // Reduced button padding
-            border: 'none',
-            cursor: 'pointer',
-            outline: 'none',
-            borderRadius: '5px',
-            marginRight: '5px',  // Space between buttons
-            flex: 1,  // Flexible width for each tab
-        };
+    const [currentSnippet, setCurrentSnippet] = useState(0);
 
-        const activeTabStyle = {
-            ...tabStyle,
-            backgroundColor: '#357a38'  // Darker green for active tab
-        };
+    const data = sourceCode[currentSnippet];
 
-        const containerStyle = {
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '300px',  // Minimum height for the overall container
-            borderRadius: '5px',
-            overflow: 'hidden',  // Ensures no content spills out
-            padding: '20px',  // Added padding for spacing
-            margin: '20px',  // Added margin for spacing
-        };
+    const code = data.code.trim().replace(/%input%/g, inputFormatter(props.input, data.language) ?? '');
 
-        const tabsContainerStyle = {
-            display: 'flex',  // Flex display for equal spacing
-            marginBottom: '20px',  // Added margin between buttons and code
-        };
+    const sections = splitTextBySections( 
+        sourceCode[currentSnippet].language.toLowerCase() === 'python' ? 
+            code.replace(/#[^\r\n]*/g, match => `//${match.substring(1)}`) :
+            code
+    );
 
-        const contentStyle = {
-            flexGrow: 1,  // Takes remaining space in the container
-            backgroundColor: '#8FBC8F',  // Light green background for content area
-            padding: '20px',
-            display: 'flex',
-            alignItems: 'center',  // Centers the content vertically
-            justifyContent: 'center',  // Centers the content horizontally
-            color: '#2F4F4F',  // Dark slate gray color for text
-            fontSize: '16px',  // Text size
-            fontFamily: 'Courier New, monospace',  // Use monospaced font
-            whiteSpace: 'pre-wrap',  // Preserve formatting, including line breaks
-        };
+    const [expanded, setExpanded] = useState(true);
 
-        // Dummy code content for each language
-        const codeContent = {
-            'C++': `C++ Code:\nint main() {\n    cout << "Hello, World!";\n    return 0;\n}`,
-            'Python': `Python Code:\nprint("Hello, World!")`,
-            'Java': `Java Code:\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`
-        };
-
-        return (
-            <div style={containerStyle}>
-                <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>The Code</h1>
-                <div style={tabsContainerStyle}>
-                    <button
-                        style={activeTab === "C++" ? activeTabStyle : tabStyle}
-                        onClick={() => this.setActiveTab("C++")}
-                    >
-                        C++
-                    </button>
-                    <button
-                        style={activeTab === "Python" ? activeTabStyle : tabStyle}
-                        onClick={() => this.setActiveTab("Python")}
-                    >
-                        Python
-                    </button>
-                    <button
-                        style={activeTab === "Java" ? activeTabStyle : tabStyle}
-                        onClick={() => this.setActiveTab("Java")}
-                    >
-                        Java
-                    </button>
+    return (
+        <div className={styles['main-container']}>
+            <h1>Source Code</h1>
+            <div className={styles['content-container']}>
+                <div className={styles['button-container']}>
+                    { sourceCode.map((snippet, index) => (
+                        <div
+                            key={index}
+                            className={currentSnippet === index ? styles['button-active'] : styles['button-inactive']}
+                            onClick={() => setCurrentSnippet(index)}
+                        >
+                            {snippet.language}
+                        </div>
+                    )) }
                 </div>
-                <div style={contentStyle}>
-                    <code>{codeContent[activeTab]}</code>
+                <div className={styles['code-container']} style={ !expanded ? { height: '1em', minHeight: '0' } : {} }>
+                    { expanded ?
+                    <div className={styles['code-inner-container']}> 
+                        <pre style={{ display: "block", whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
+                            { Object.entries(sections).map((section, index) => (
+                                <code key={index} style = { 
+                                    props.currentSection !== -1 && section[1].section === props.currentSection ? { 
+                                        backgroundColor: 'yellow',
+                                        fontWeight: 'bold',
+                                    } : {} 
+                                }>
+                                    {section[1].text}
+                                </code>
+                            )) }
+                        </pre>
+                    </div> : null }
                 </div>
             </div>
-        );
-    }
+            <div className={styles['expand-button']} onClick={() => setExpanded(!expanded)}>
+                { expanded ? 'Minimize' : 'Expand' }
+            </div>
+        </div>
+    );
 }

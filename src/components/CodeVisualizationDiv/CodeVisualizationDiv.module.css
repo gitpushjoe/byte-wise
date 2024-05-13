@@ -1,0 +1,26 @@
+canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+}
+
+.help-container {
+    display: inline;
+    flex-flow: column wrap;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    font-size: 1.2em;
+    text-overflow: word-wrap;
+    white-space: pre-wrap;
+    margin-top: 10px;
+    height: fit-content;
+    padding: 20px;
+    max-height: 50vh;
+    border: 3px solid darkslategray;
+    overflow-y: auto;
+    word-wrap: break-word;
+    border-radius: 20px;
+    margin-top: 20px;
+}
+

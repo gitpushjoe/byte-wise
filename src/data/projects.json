@@ -1,42 +1,20 @@
 [
   {
-    "title": "Quicksort Algorithm",
-    "imageSrc": "projects/sort.png",
+    "title": "Insertion Sort",
+    "imageSrc": "https://static.vecteezy.com/system/resources/previews/039/202/111/non_2x/insertion-sort-algorithm-color-icon-illustration-vector.jpg",
     "description": "",
-    "visualize": "http://localhost:5173/test"
+    "path": "insertion-sort"
   },
   {
-    "title": "Algorithm 1",
-    "imageSrc": "projects/algo.png",
+    "title": "Merge Sort",
+    "imageSrc": "https://static.vecteezy.com/system/resources/previews/039/202/120/non_2x/mergesort-algorithm-color-icon-illustration-vector.jpg",
     "description": "",
-    "visualize": "https://www.google.com"
+    "path": "merge-sort"
   },
   {
-    "title": "Algorithm 1",
-    "imageSrc": "projects/algo.png",
+    "title": "Selection Sort",
+    "imageSrc": "https://static.vecteezy.com/system/resources/previews/039/202/128/original/selection-sort-algorithm-color-icon-illustration-vector.jpg",
     "description": "",
-    "visualize": "https://www.google.com"
-    }
-,
-  {
-    "title": "Algorithm 1",
-    "imageSrc": "projects/algo.png",
-    "description": "",
-    "visualize": "https://www.google.com"
+    "path": "selection-sort"
   }
-  ,
-  {
-    "title": "Algorithm 1",
-    "imageSrc": "projects/algo.png",
-    "description": "",
-    "visualize": "https://www.google.com"
-    }
-    ,
-    {
-      "title": "DFS",
-      "imageSrc": "projects/tree.png",
-      "description": "",
-      "visualize": "https://www.google.com"
-      }
-    
 ]

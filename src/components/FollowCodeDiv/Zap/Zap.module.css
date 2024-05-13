@@ -1,0 +1,42 @@
+.header {
+    padding-left: 20px;
+    width: fit-content;
+    padding-right: 10px;
+    padding-top: 2.5px;
+    padding-bottom: 2.5px;
+    border-radius: 10px 10px 10px 0px;
+}
+
+.container {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+.bar {
+    flex-grow: 0;
+    width: 10px;
+    margin-right: 5px;
+    display: block;
+    border-radius: 0px 0px 10px 10px;
+}
+
+.inner-container {
+    flex-grow: 1;
+    width: fit-content;
+}
+
+.variables-container {
+    margin-bottom: 10px;
+}
+
+.inner-variables-container {
+    margin: 0;
+    line-height: 0%;
+}
+
+.variable-text {
+    font-family: 'Ubuntu Sans Mono', monospace;
+    font-size: .75em;
+}

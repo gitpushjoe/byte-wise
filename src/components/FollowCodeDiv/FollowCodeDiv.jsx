@@ -1,85 +1,46 @@
-import React from "react";
+import { useState, useEffect, useRef } from "react";
+import styles from "./FollowCodeDiv.module.css";
+import Scope from "./Zap/Zap";
 
-// This component displays tabs for "Explanation" and "Variables" content.
-export class FollowCodeDiv extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            activeTab: "Explanation"
-        };
-    }
+export function FollowCodeDiv(props) {
 
-    setActiveTab(tab) {
-        this.setState({ activeTab: tab });
-    }
+    const [currentZap, setCurrentZap] = useState(0);
 
-    render() {
-        const { activeTab } = this.state;
-        const tabStyle = {
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            padding: '10px 20px',
-            border: 'none',
-            cursor: 'pointer',
-            outline: 'none',
-            borderRadius: '5px',
-            marginRight: '5px',
-            flex: 1,
-        };
+    const ref = useRef(null);
 
-        const activeTabStyle = {
-            ...tabStyle,
-            backgroundColor: '#357a38'
-        };
+    useEffect(() => {
+        if (ref.current) {
+            ref.current.scrollTop = ref.current.scrollHeight;
+        }
+    }, [props.zap]);
 
-        const containerStyle = {
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '300px',
-            borderRadius: '5px',
-            overflow: 'hidden',
-            padding: '20px',
-            margin: '20px',
-        };
-
-        const tabsContainerStyle = {
-            display: 'flex',
-            marginBottom: '20px',
-        };
-
-        const contentStyle = {
-            flexGrow: 1,
-            backgroundColor: '#8FBC8F',
-            padding: '60px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#2F4F4F',
-            fontSize: '16px',
-        };
-
-        return (
-            <div style={containerStyle}>
-                <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>Follow The Code</h1>
-                <div style={tabsContainerStyle}>
-                    <button
-                        style={activeTab === "Explanation" ? activeTabStyle : tabStyle}
-                        onClick={() => this.setActiveTab("Explanation")}
-                    >
-                        Explanation
-                    </button>
-                    <button
-                        style={activeTab === "Variables" ? activeTabStyle : tabStyle}
-                        onClick={() => this.setActiveTab("Variables")}
-                    >
-                        Variables
-                    </button>
+    return (
+        <div className={styles['main-container']}>
+            <h1>Details</h1>
+            <div className={styles['content-container']}>
+                <div className={styles['button-container']}>
+                    { ['Explanation', 'Variables'].map((text, index) => (
+                        <div
+                            key={index}
+                            className={currentZap === index ? styles['button-active'] : styles['button-inactive']}
+                            onClick={() => setCurrentZap(index)}
+                        >
+                            {text}
+                        </div>))
+                    }
                 </div>
-                <div style={contentStyle}>
-                    {activeTab === "Explanation" && <div>Explanation Content</div>}
-                    {activeTab === "Variables" && <div>Variables Content</div>}
+                <div className={styles['lower-container'] + ' ' + (currentZap === 1 ? styles['explanation-container'] : styles['variables-container'])} >
+                    <div className={styles['inner-container']} ref={ref}>
+                        {
+                            currentZap === 0 ? 
+                                props.explanation :
+                                props.zap ? 
+                                    <Scope data={props.zap.snapshotData} /> :
+                                    <em>Waiting for code execution...</em>
+                        }
+                    </div>
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
 }

@@ -1,0 +1,8 @@
+{
+  "insertion-sort": 
+"Insertion Sort is a stable, in-place, iterative sorting algorithm.\n\nIt works by creating a section of the array, where the elements in it are always sorted (shown in green). First, the first element of the array is put in the sorted region (since an array with one element is already in order). Then, the next element is compared to the elements in the sorted region, and is inserted in the correct position. This process is repeated until the entire array is sorted.\n\nSPACE COMPLEXITY: O(1)\nTIME COMPLEXITY: O(n^2)",
+  "merge-sort":
+"Merge Sort is a stable, recursive, divide-and-conquer sorting algorithm.\n\nThe algorithm begins by dividing the array into halves recursively until each subdivision contains a single element. It then merges these smaller arrays, comparing and arranging elements to construct increasingly larger sorted arrays until the entire original array is sorted.\n\nSPACE COMPLEXITY: O(n)\nTIME COMPLEXITY: O(n log n)",
+  "selection-sort":
+"Selection Sort is an unstable, in-place, iterative sorting algorithm.\n\nIt works by dividing the array into two sections: the sorted section (highlighted in green) and the unsorted section. Initially, the entire array is considered unsorted. The algorithm repeatedly finds the smallest element from the unsorted section and adds it to the end of the unsorted section. This process continues until the entire array is sorted.\n\nSPACE COMPLEXITY: O(1)\nTIME COMPLEXITY: O(n^2)"
+}
