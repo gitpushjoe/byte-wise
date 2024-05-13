@@ -106,6 +106,9 @@ export default class ArrayStage extends AchillesStage {
 	}
 
 	floatOut(sprite, duration = 15, reverse = false) {
+		if (sprite === undefined) {
+			return;
+		}
 		const floatAnims = [
 			[{
 				duration: this.stretchTime(duration),
@@ -132,6 +135,9 @@ export default class ArrayStage extends AchillesStage {
 	}
 
 	floatIn(sprite, duration = 15, reverse = false) {
+		if (sprite === undefined) {
+			return;
+		}
 		const floatAnims = this.floatOut(null, duration);
 		floatAnims[0][0].from = 0;
 		floatAnims[0][0].to = 1;

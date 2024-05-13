@@ -5,7 +5,7 @@ import Palette from '../palette';
 import Constants from '../constants';
 import ArrayStage from './array_stage';
 
-export default class InsertionSort extends ArrayStage {
+export default class SelectionSort extends ArrayStage {
 
 	constructor(canvas) {
 		super(canvas);

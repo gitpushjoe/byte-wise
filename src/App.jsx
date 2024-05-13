@@ -12,10 +12,12 @@ import { AlgoPage } from "./components/AlgoPage/AlgoPage";
 import InsertionSort from "./components/achilles/implementations/insertion_sort";
 import MergeSort from "./components/achilles/implementations/merge_sort";
 import SelectionSort from "./components/achilles/implementations/selection_sort";
+import BubbleSort from "./components/achilles/implementations/bubble_sort";
 
 import InsertionSortCode from "./data/code/insertion_sort/source_code.js";
 import MergeSortCode from "./data/code/merge_sort/source_code.js";
 import SelectionSortCode from "./data/code/selection_sort/source_code.js";
+import BubbleSortCode from "./data/code/bubble_sort/source_code.js";
 
 import Explanations from "./data/explanations.json";
 
@@ -46,6 +48,14 @@ function App() {
               achillesStage={SelectionSort}
               explanation={Explanations['selection-sort']}
               path="selection-sort"
+            />
+          } />
+          <Route path="/bubble-sort" element={
+            <AlgoPage 
+              sourceCode={BubbleSortCode()}
+              achillesStage={BubbleSort}
+              explanation={Explanations['bubble-sort']}
+              path="bubble-sort"
             />
           } />
           <Route path="/" element={<Home />} />

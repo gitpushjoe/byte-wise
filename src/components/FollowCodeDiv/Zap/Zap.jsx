@@ -5,7 +5,6 @@ export default function Scope(props) {
     const index = props.index ?? 0;
     const data = props.data[index];
     const scopeType = data?.get('[[SCOPE_TYPE]]');
-    console.log(scopeType);
     const color = 
         scopeType === 'MAIN' ? 'orange' :
             scopeType === 'FUNCTION' ? 'lightgreen' :

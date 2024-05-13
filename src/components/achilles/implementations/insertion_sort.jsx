@@ -74,6 +74,33 @@ console.log(arr); // 11
 		super.interpolate();
 		const zap = this.zaps[this.zapIdx];
 		const section = zap.section;
+		if (section === 999) {
+			this.arr.findChildrenWhere(c => c.name.startsWith("arritem/")).forEach(c => {
+				c.createChannels(1);
+				c.channels[0].push({
+					duration: this.stretchTime(15),
+					property: 'strokeColor',
+					from: null,
+					to: Colors.DarkGreen,
+				});
+				c.channels[1].push({
+					duration: this.stretchTime(15),
+					property: 'color',
+					from: null,
+					to: Colors.Green,
+				});
+			});
+		}
+		if (this.zapIdx === this.zaps.length - 1) {
+			this.arr.findChildrenWhere(c => c.name.startsWith("arritem/")).forEach(c => {
+				c.channels[0].push({
+					duration: this.stretchTime(15),
+					property: 'strokeColor',
+					from: null,
+					to: Colors.DarkGreen,
+				});
+			});
+		}
 		if (section === 9) {
 			const j = this.findArrayPointer("j");
 			const key = this.playground.findDescendant('!arr-key').children[0];
@@ -168,6 +195,9 @@ console.log(arr); // 11
 				to: -(Constants.ARR_ITEM_SIZE + Constants.ARR_ITEM_MARGIN),
 			}]);
 			this.arr.findChild("!arr-key").bringToFront();
+		} else if (section === 999) {
+			this.floatOut(this.findArrayPointer("i"));
+			this.floatOut(this.findArrayPointer("j"));
 		}
 	}
 
@@ -195,6 +225,9 @@ console.log(arr); // 11
 			const i = parseInt(c.name.split("/")[1]);
 			if (!c.name.startsWith("arritem/")) {
 				return;
+			}
+			if (idx >= this.zaps.length - 2) {
+				c.strokeColor = Colors.DarkGreen;
 			}
 			if (zap.section === 10 && i === zap.safeFind("j") + 1) {
 				c.color = Palette.KEY_DEFAULT;

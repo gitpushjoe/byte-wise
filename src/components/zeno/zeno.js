@@ -141,6 +141,10 @@ export default class Zeno {
 		return "WHILE";
 	}
 
+	static get BREAK() {
+		return Symbol("BREAK");
+	}
+
 	static stringify(value) {
 		if (value === undefined) {
 			return "undefined";
@@ -325,6 +329,10 @@ export default class Zeno {
 			this.set(name, value);
 			this.zap(section);
 			const res = body(value);
+			if (res?.toString() === Zeno.BREAK.toString()) {
+				this.stack.pop();
+				return 1;
+			}
 			if (res !== undefined) {
 				this.set(Zeno.RETURN_VALUE, res);
 				return 1;
@@ -400,6 +408,10 @@ export default class Zeno {
 		if (success) {
 			this.pushScope(Zeno.BLOCK, Zeno.IF, section);
 			const res = body();
+			if (res?.toString() === Zeno.BREAK.toString()) {
+				this.stack.pop();
+				return Zeno.BREAK;
+			}
 			if (res !== undefined) {
 				this.set(Zeno.RETURN_VALUE, res);
 				return 1;
@@ -408,6 +420,10 @@ export default class Zeno {
 		} else if (elseBody !== undefined) {
 			this.pushScope(Zeno.BLOCK, Zeno.ELSE, [section, elseSection]);
 			const res = elseBody();
+			if (res?.toString() === Zeno.BREAK.toString()) {
+				this.stack.pop();
+				return Zeno.BREAK;
+			}
 			if (res !== undefined) {
 				this.set(Zeno.RETURN_VALUE, res);
 				return 1;

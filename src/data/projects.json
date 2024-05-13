@@ -16,5 +16,11 @@
     "imageSrc": "https://static.vecteezy.com/system/resources/previews/039/202/128/original/selection-sort-algorithm-color-icon-illustration-vector.jpg",
     "description": "",
     "path": "selection-sort"
+  },
+  {
+    "title": "Bubble Sort",
+    "imageSrc": "https://static.vecteezy.com/system/resources/previews/039/202/116/non_2x/bubble-sort-algorithm-color-icon-illustration-vector.jpg",
+    "description": "",
+    "path": "bubble-sort"
   }
 ]
